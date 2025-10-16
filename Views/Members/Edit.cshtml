@@ -1,0 +1,329 @@
+﻿@model Demo.Models.Member
+
+@{
+    ViewData["Title"] = "";
+}
+<div class="order-edit-container">
+    <h2>Members Edit</h2>
+
+    <h4>Member</h4>
+    <hr />
+   
+   <form asp-action="Edit" method="post" enctype="multipart/form-data" asp-route-id="@Model.Id">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+        <div class="form-row-single">
+            <div class="form-group">
+                <label asp-for="Username" class="control-label"></label>
+                <input asp-for="Username" class="form-control" />
+                <span asp-validation-for="Username" class="text-danger"></span>
+            </div>
+        </div>
+        
+        <div class="form-row-single">
+            <div class="form-group">
+                <label asp-for="Password" class="control-label"></label>
+                <input asp-for="Password" class="form-control" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+        </div>
+                    
+        <div class="form-row-single">
+            <div class="form-group">
+                <label asp-for="Email" class="control-label"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+                    
+        </div>
+                        
+        <div class="form-row-single">
+            <div class="form-group">
+                <label asp-for="Point" class="control-label"></label>
+                <input asp-for="Point" class="form-control" type="number" min="0" step="1" />
+                <span asp-validation-for="Point" class="text-danger"></span>
+            </div>
+                        
+        </div>
+          
+        <div class="form-row-single">
+            <div class="form-group">
+                <label>Upload Photo</label>
+
+                <!-- 拖拽区域 -->
+                <div id="drop-zone"
+                     style="border: 2px dashed #ccc; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer;">
+                    <p>Drag & Drop your photo here, or click to select</p>
+                    <input type="file" id="photoInput" name="Photo" accept="image/*" style="display:none;" />
+
+                    <!-- 预览 -->
+                    <img id="preview"
+                         src="@(string.IsNullOrEmpty(Model.PhotoPath) ? "#" : Model.PhotoPath)"
+                         alt="Preview"
+                         style="@(string.IsNullOrEmpty(Model.PhotoPath) ? "display:none;" : "display:block;") margin-top:10px; max-height:150px;" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group form-actions" style="margin-top:16px;">
+                <input type="submit" value="Save" class="btn btn-primary" />
+			<a asp-action="Index" class="btn btn-secondary">Back to List</a>
+         </div>
+
+    </form>
+   </div>
+
+
+
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        const dropZone = document.getElementById("drop-zone");
+        const photoInput = document.getElementById("photoInput");
+        const preview = document.getElementById("preview");
+
+        dropZone.addEventListener("click", () => {
+            photoInput.click();
+        });
+
+        photoInput.addEventListener("change", () => {
+            if (photoInput.files && photoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.src = e.target.result;
+                    preview.style.display = "block";
+                };
+                reader.readAsDataURL(photoInput.files[0]);
+            }
+        });
+
+        dropZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZone.style.backgroundColor = "#f0f8ff";
+        });
+
+        dropZone.addEventListener("dragleave", () => {
+            dropZone.style.backgroundColor = "white";
+        });
+
+        dropZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropZone.style.backgroundColor = "white";
+
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                photoInput.files = e.dataTransfer.files;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    preview.src = ev.target.result;
+                    preview.style.display = "block";
+                };
+                reader.readAsDataURL(e.dataTransfer.files[0]);
+            }
+        });
+    </script>
+}
+
+<style>
+
+    /* container */
+    .order-edit-container {
+        max-width: 900px;
+        margin: 30px auto;
+        padding: 22px;
+        border: 1px solid #e6e6e6;
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+        .order-edit-container h2 {
+            text-align: center;
+            margin-bottom: 18px;
+            color: #333;
+            font-size: 1.4rem;
+        }
+
+    .alert {
+        padding: 12px;
+        margin-bottom: 18px;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .form-row-single {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+        .form-row-single .form-label {
+            width: 160px;
+            min-width: 120px;
+            font-weight: 700;
+            color: #444;
+            margin-top: 6px;
+        }
+
+        .form-row-single .form-control-area {
+            flex: 1 1 520px;
+        }
+
+    .conditional-field {
+        margin-top: 8px;
+    }
+
+    .form-group {
+        display: flex;
+        align-items: center; 
+        gap: 10px; 
+    }
+
+        .form-group label {
+            width: 120px; 
+            margin-bottom: 10px; 
+        }
+
+        .form-group .form-control {
+            flex: 1; 
+        }
+
+
+    label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        color: #444;
+    }
+
+    .form-control {
+        flex: 1;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 15px;
+    }
+
+        .form-control:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(0,123,255,0.06);
+        }
+
+    .text-danger {
+        color: #c0392b;
+    }
+
+    .switch-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+        .switch-label input[type="checkbox"] {
+            transform: scale(1.02);
+            margin-right: 6px;
+        }
+
+    .order-items-block {
+        margin-top: 6px;
+    }
+
+    .order-items-wrapper {
+        border: 1px solid #f0f0f0;
+        padding: 10px;
+        border-radius: 6px;
+        background: #fafafa;
+    }
+
+    .order-items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+        .order-items-table th, .order-items-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        .order-items-table thead th {
+            font-weight: 700;
+            color: #444;
+            background: transparent;
+        }
+
+    .voucher-inline {
+        color: #c0392b;
+        font-weight: 700;
+    }
+
+    .order-items-actions {
+        display: flex;
+        justify-content: flex-start;
+        gap: 8px;
+        margin-top: 6px;
+    }
+
+    .btn {
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background-color: #e74c3c;
+        color: #fff;
+    }
+
+        .btn-primary:hover {
+            background-color: #c0392b;
+        }
+
+    .btn-secondary {
+        background-color: #95a5a6;
+        color: #fff;
+    }
+
+        .btn-secondary:hover {
+            background-color: grey;
+            color: #fff;
+        }
+
+    .btn-danger {
+        background-color: #e74c3c;
+        color: white;
+    }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 6px;
+    }
+</style>

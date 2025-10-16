@@ -1,0 +1,549 @@
+﻿@model Demo.Models.HomeIndexViewModel
+
+<!-- Modal 遮罩（用餐选项） -->
+<div id="diningOptionModal" style="
+    position:fixed;
+    top:60px;
+    left:0;
+    width:100%;
+    height:calc(100% - 60px);
+    background:rgba(0,0,0,0.85);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:1000;">
+    <div style="background:#fff; padding:40px; border-radius:12px; text-align:center; width:300px; z-index:1001; position:relative;">
+        <h2>Please select dining option</h2>
+        <button id="btnDineIn" style="margin:10px; padding:15px 30px; font-size:18px;" class="btn">Dine In</button>
+        <button id="btnTakeAway" style="margin:10px; padding:15px 30px; font-size:18px;" class="btn">Take Away</button>
+    </div>
+</div>
+
+@{
+    ViewBag.Title = "Welcome to X Burger!";
+}
+
+<!-- ===== 广告轮播（顶部） ===== -->
+<div id="adsCarousel" style="width:100%; margin-bottom:20px; text-align:center;">
+    @if (Model.Ads != null && Model.Ads.Any())
+    {
+        <div style="max-width:900px; margin:0 auto; position:relative;" class="btndiv">
+            @foreach (var ad in Model.Ads)
+            {
+                <div class="ad-slide" data-product-id="@(ad.ProductId?.ToString() ?? "")" data-url="@(ad.Url ?? "")" style="display:none; cursor:pointer;">
+                    <img src="@ad.ImagePath" alt="@ad.Title" style="max-width:100%; max-height:260px; object-fit:cover; border-radius:8px;" />
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- 搜索栏 -->
+<div id="searchBar" style="margin: 20px auto; text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; max-width: 600px;">
+    <form id="searchForm" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+            <!-- 搜索类型选择 -->
+            <select id="searchType" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="name">Search by Name</option>
+                <option value="price">Search by Price Range</option>
+            </select>
+
+            <!-- 名称搜索容器 -->
+            <div id="nameSearchContainer" style="flex: 1; max-width: 300px;">
+                <input type="text" id="searchName" placeholder="Search by product name"
+                       style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;" />
+            </div>
+
+            <!-- 价格搜索容器 -->
+            <div id="priceSearchContainer" style="display: none; flex: 1; max-width: 300px;">
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <input type="number" id="minPrice" placeholder="Min" min="0" step="0.01"
+                           style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 45%;" />
+                    <span style="color: #666;">-</span>
+                    <input type="number" id="maxPrice" placeholder="Max" min="0" step="0.01"
+                           style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 45%;" />
+                </div>
+            </div>
+
+            <button type="submit" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Search
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="product-list" style="display:flex; flex-wrap:wrap; gap:20px;">
+    @foreach (var product in Model.Products)
+    {
+        <div class="product-card" style="border:1px solid #ccc; padding:10px; width:200px; text-align:center;">
+            <h3>@product.Name</h3>
+            <p>RM @product.Price</p>
+
+            <a href="javascript:void(0);"
+               class="btn-view-product"
+               data-id="@product.Id"
+               data-name="@product.Name"
+               data-price="@product.Price"
+               data-images="@string.Join(",", product.Images?.Select(i => i.ImagePath) ?? new List<string>())">
+                @if (product.Images != null && product.Images.Any())
+                {
+                    <img src="@product.Images.First().ImagePath" alt="@product.Name" width="150" />
+                }
+                else
+                {
+                    <img src="/images/no-image.png" alt="No Image" width="150" />
+                }
+            </a>
+        </div>
+    }
+</div>
+
+<!-- 产品 Modal -->
+<div id="productModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.7); justify-content:center; align-items:center;">
+    <div style="background:#fff; padding:20px; border-radius:8px; width:400px; position:relative;">
+        <span id="closeModal" style="position:absolute; top:10px; right:15px; cursor:pointer;">✖</span>
+
+        <h3 id="modalName"></h3>
+        <p>Price: RM <span id="modalPrice"></span></p>
+
+        <div id="modalImagesContainer" style="position:relative; margin-bottom:15px; text-align:center;">
+            <button id="prevImage" style="position:absolute; top:50%; left:0; transform:translateY(-50%); background:none; border:none; font-size:24px; cursor:pointer;">&#10094;</button>
+
+            <div id="modalImages" style="display:flex; justify-content:center; align-items:center;"></div>
+
+            <button id="nextImage" style="position:absolute; top:50%; right:0; transform:translateY(-50%); background:none; border:none; font-size:24px; cursor:pointer;">&#10095;</button>
+        </div>
+
+        <label>Quantity:</label>
+        <input type="number" id="modalQuantity" value="1" min="1" max="99" style="width:80px;" />
+
+        <button id="addToCartBtn" style="margin-top:10px;" class="addbtn">Add to Cart</button>
+    </div>
+</div>
+
+
+
+@section Scripts {
+    <script>
+                // ---------------- 用餐选项 modal 控制 ----------------
+        document.addEventListener("DOMContentLoaded", function () {
+            // 先检查是否有未付款订单
+            fetch('/Orders/CheckUnpaidOrder')
+                .then(response => response.json())
+                .then(orderData => {
+                    if (orderData.hasUnpaidOrder) {
+                        // 如果有未付款订单，不显示用餐选项模态框
+                        document.getElementById("diningOptionModal").style.display = "none";
+
+                        // 确保用餐选项已设置（如果没有，则设置为默认值）
+                        fetch("/Home/CheckDiningOption")
+                            .then(res => res.json())
+                            .then(data => {
+                                if (!data.hasOption) {
+                                    // 如果没有设置用餐选项，默认设置为TakeAway
+                                    setDiningOption("TakeAway");
+                                }
+                            });
+                    } else {
+                        // 如果没有未付款订单，按原逻辑检查用餐选项
+                        fetch("/Home/CheckDiningOption")
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.hasOption) {
+                                    document.getElementById("diningOptionModal").style.display = "none";
+                                } else {
+                                    document.getElementById("diningOptionModal").style.display = "flex";
+                                }
+                            });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking unpaid order:', error);
+                    // 出错时按原逻辑检查用餐选项
+                    fetch("/Home/CheckDiningOption")
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.hasOption) {
+                                document.getElementById("diningOptionModal").style.display = "none";
+                            } else {
+                                document.getElementById("diningOptionModal").style.display = "flex";
+                            }
+                        });
+                });
+        });
+
+                        function setDiningOption(option) {
+            if (option === "DineIn") {
+                // 要求用户输入人数（capacity）
+                let input = prompt("Please enter number of seats needed:", "2");
+                if (input === null) {
+                    // user cancelled -> 不关闭主 modal，什么都不做
+                    return;
+                }
+
+                const capacity = parseInt(input);
+                if (isNaN(capacity) || capacity < 1) {
+                    alert("Please enter a valid number (1 or greater).");
+                    return;
+                }
+
+                // 调用后端检查并设置（modal 直到 success 才会关闭）
+                fetch("/Home/CheckAndSetDiningOption", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `option=${encodeURIComponent(option)}&capacity=${capacity}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // 成功：隐藏 modal，并按原逻辑检查未付款订单后可能刷新
+                        document.getElementById("diningOptionModal").style.display = "none";
+
+                        fetch('/Orders/CheckUnpaidOrder')
+                            .then(response => response.json())
+                            .then(orderData => {
+                                if (orderData.hasUnpaidOrder) {
+                                    location.reload();
+                                }
+                            });
+                    } else {
+                        // 失败：提示并保留 modal，让使用者重新选择
+                        alert(data.message || "There are not enough seats available at the moment.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Error while checking seats:", err);
+                    alert("Server error when checking seats. Please try again.");
+                });
+            } else {
+                // TakeAway: 维持原先行为
+                fetch("/Home/SetDiningOption", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "option=" + option
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById("diningOptionModal").style.display = "none";
+                        fetch('/Orders/CheckUnpaidOrder')
+                            .then(response => response.json())
+                            .then(orderData => {
+                                if (orderData.hasUnpaidOrder) {
+                                    location.reload();
+                                }
+                            });
+                    } else {
+                        alert("Failed to set option");
+                    }
+                });
+            }
+        }
+
+
+        document.getElementById("btnDineIn").addEventListener("click", function () {
+            setDiningOption("DineIn");
+        });
+
+        document.getElementById("btnTakeAway").addEventListener("click", function () {
+            setDiningOption("TakeAway");
+        });
+
+        // ---------------- 广告轮播 & 点击逻辑 ----------------
+        document.addEventListener("DOMContentLoaded", function () {
+            var slides = document.querySelectorAll('#adsCarousel .ad-slide');
+            var idx = 0;
+            if (slides.length > 0) {
+                slides[0].style.display = 'block';
+                setInterval(function () {
+                    slides[idx].style.display = 'none';
+                    idx = (idx + 1) % slides.length;
+                    slides[idx].style.display = 'block';
+                }, 4000);
+            }
+
+            slides.forEach(function (slide) {
+                slide.addEventListener('click', function () {
+                    var productId = this.getAttribute('data-product-id');
+                    var url = this.getAttribute('data-url');
+                    if (productId && productId !== '') {
+                        // 通过 API 拉 product 数据并打开 modal
+                        fetch('/Products/GetProductJson?id=' + productId)
+                            .then(res => res.json())
+                            .then(p => {
+                                openProductModalFromJson(p);
+                            });
+                    } else if (url && url !== '') {
+                        window.open(url, '_blank');
+                    }
+                });
+            });
+        });
+
+        // ---------------- product modal 的打开逻辑（广告/商品共用） ----------------
+        let currentModalProductId = null;
+        let currentImages = [];
+        let currentImageIndex = 0;
+
+        function renderCurrentImage() {
+            if (currentImages.length > 0) {
+                document.getElementById("modalImages").innerHTML =
+                    `<img src="${currentImages[currentImageIndex]}" width="250" style="border-radius:6px;" />`;
+            } else {
+                document.getElementById("modalImages").innerHTML =
+                    `<img src="/images/no-image.png" width="250" />`;
+            }
+        }
+
+                // 上一张
+        document.getElementById("prevImage").addEventListener("click", function () {
+            if (currentImages.length > 0) {
+                currentImageIndex = (currentImageIndex - 1 + currentImages.length) % currentImages.length;
+                renderCurrentImage();
+            }
+        });
+
+        // 下一张
+        document.getElementById("nextImage").addEventListener("click", function () {
+            if (currentImages.length > 0) {
+                currentImageIndex = (currentImageIndex + 1) % currentImages.length;
+                renderCurrentImage();
+            }
+        });
+
+                // 点击商品卡片打开
+        document.querySelectorAll(".btn-view-product").forEach(btn => {
+            btn.addEventListener("click", function () {
+                let id = this.getAttribute("data-id");
+                let name = this.getAttribute("data-name");
+                let price = this.getAttribute("data-price");
+                let images = this.getAttribute("data-images").split(",").filter(x => x);
+
+                currentModalProductId = id;
+                currentImages = images;
+                currentImageIndex = 0;
+
+                document.getElementById("modalName").innerText = name;
+                document.getElementById("modalPrice").innerText = price;
+                renderCurrentImage();
+
+                document.getElementById("productModal").style.display = "flex";
+            });
+        });
+
+        // 通过 JSON 打开（广告点击）
+        function openProductModalFromJson(p) {
+            currentModalProductId = p.id;
+            currentImages = p.images && p.images.length > 0 ? p.images : [];
+            currentImageIndex = 0;
+
+            document.getElementById("modalName").innerText = p.name;
+            document.getElementById("modalPrice").innerText = p.price;
+            renderCurrentImage();
+
+            document.getElementById("productModal").style.display = "flex";
+        }
+
+        // 关闭 modal
+        document.getElementById("closeModal").addEventListener("click", function () {
+            document.getElementById("productModal").style.display = "none";
+            document.getElementById("modalQuantity").value = 1;
+        });
+
+        // Add to cart 按钮：使用 currentModalProductId
+        document.getElementById("addToCartBtn").addEventListener("click", function () {
+            var qty = document.getElementById("modalQuantity").value || 1;
+            if (!currentModalProductId) {
+                alert("Product not found.");
+                return;
+            }
+
+            fetch("/Cart/AddToCart", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `productId=${currentModalProductId}&quantity=${qty}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById("productModal").style.display = "none";
+                }
+            });
+        });
+
+                // 自动打开产品Modal（如果Session中有UseVoucher）
+        document.addEventListener("DOMContentLoaded", function () {
+            var useVoucher = '@(Context.Session.GetInt32("UseVoucher")?.ToString() ?? "")';
+            if (useVoucher) {
+                // 获取Voucher信息
+                $.get('/Members/GetVoucherProduct?id=' + useVoucher, function (data) {
+                    if (data.productId) {
+                        // 通过API获取产品信息并打开modal
+                        fetch('/Products/GetProductJson?id=' + data.productId)
+                            .then(res => res.json())
+                            .then(p => {
+                                openProductModalFromJson(p);
+                                // 清除Session中的UseVoucher
+                                $.post('/Home/ClearUseVoucher');
+                            });
+                    }
+                });
+            }
+        });
+
+                // ---------------- 搜索功能 ----------------
+        document.addEventListener("DOMContentLoaded", function() {
+            const searchType = document.getElementById("searchType");
+            const nameSearchContainer = document.getElementById("nameSearchContainer");
+            const priceSearchContainer = document.getElementById("priceSearchContainer");
+
+            // 搜索类型切换
+            searchType.addEventListener("change", function() {
+                if (this.value === "price") {
+                    nameSearchContainer.style.display = "none";
+                    priceSearchContainer.style.display = "block";
+                } else {
+                    nameSearchContainer.style.display = "block";
+                    priceSearchContainer.style.display = "none";
+                }
+            });
+
+            // 表单提交处理
+            document.getElementById("searchForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+
+                const searchType = document.getElementById("searchType").value;
+                const searchName = document.getElementById("searchName").value;
+                const minPrice = document.getElementById("minPrice").value;
+                const maxPrice = document.getElementById("maxPrice").value;
+
+                if (searchType === "name" && searchName) {
+                    filterProductsByName(searchName);
+                } else if (searchType === "price" && (minPrice || maxPrice)) {
+                    filterProductsByPrice(minPrice, maxPrice);
+                } else {
+                    resetProductFilter();
+                }
+            });
+        });
+
+        function filterProductsByName(name) {
+            const productCards = document.querySelectorAll('.product-card');
+            const searchTerm = name.toLowerCase();
+
+            productCards.forEach(card => {
+                const productName = card.querySelector('h3').textContent.toLowerCase();
+                if (productName.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function filterProductsByPrice(min, max) {
+            const productCards = document.querySelectorAll('.product-card');
+            const minPrice = min ? parseFloat(min) : 0;
+            const maxPrice = max ? parseFloat(max) : Number.MAX_SAFE_INTEGER;
+
+            productCards.forEach(card => {
+                const priceText = card.querySelector('p').textContent;
+                const price = parseFloat(priceText.replace('RM ', ''));
+
+                if (price >= minPrice && price <= maxPrice) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function resetProductFilter() {
+            const productCards = document.querySelectorAll('.product-card');
+            productCards.forEach(card => {
+                card.style.display = 'block';
+            });
+        }
+
+
+                // 数量输入验证
+        const quantityInput = document.getElementById('modalQuantity');
+        const quantityAlert = document.getElementById('quantityAlert');
+
+        if (quantityInput) {
+            quantityInput.addEventListener('change', function() {
+                validateQuantity(this);
+            });
+
+            quantityInput.addEventListener('input', function() {
+                validateQuantity(this, false);
+            });
+        }
+
+        function validateQuantity(input, showAlert = true) {
+            let value = parseInt(input.value);
+
+            if (isNaN(value) || value < 1) {
+                input.value = 1;
+            } else if (value > 99) {
+                input.value = 99;
+                if (showAlert) {
+                    // 显示提示信息
+                    quantityAlert.style.display = 'block';
+                    setTimeout(() => {
+                        quantityAlert.style.display = 'none';
+                    }, 3000);
+                }
+            }
+        }
+
+
+    </script>
+}
+
+<style>
+
+    .btndiv{
+        justify-self: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn{
+        display: inline-block;
+        padding: 25px;
+        text-decoration: none;
+        font-weight: 600;
+        color: #2c3e50;
+        background: #f5f5f5;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn:hover{
+            background: #1abc9c;
+            color: #fff;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .addbtn{
+        padding:5px;
+        text-decoration: none;
+        font-weight: 50;
+        color: #2c3e50;
+        background: #f5f5f5;
+        border-radius: 10px;
+    }
+
+    .addbtn:hover{
+        background: grey;
+        color: #fff;
+    }
+
+</style>

@@ -1,0 +1,66 @@
+﻿@model IEnumerable<Demo.Models.Member>
+
+<div class="table-responsive">
+    <table class="member-table">
+        <thead>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.First().Id)</th>
+                <th>@Html.DisplayNameFor(model => model.First().Username)</th>
+                <th>@Html.DisplayNameFor(model => model.First().Email)</th>
+                <th>@Html.DisplayNameFor(model => model.First().Point)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="5">
+                        <div class="alert alert-info">No members found.</div>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                foreach (var item in Model)
+                {
+                    <tr data-photo="@item.PhotoPath">
+                        <td>@item.Id</td>
+                        <td>@item.Username</td>
+                        <td>@item.Email</td>
+                        <td>@item.Point</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (ViewBag.TotalPages >= 1)
+{
+    var total = (int)ViewBag.TotalPages;
+    var current = (int)ViewBag.CurrentPage;
+
+    <ul class="pagination" aria-label="Members pagination">
+        <li class="@(current == 1 ? "disabled" : "")">
+            <a href="javascript:void(0)" class="page-link page-btn" data-page="@(Math.Max(1, current - 1))">Prev</a>
+        </li>
+
+        @for (int i = 1; i <= total; i++)
+        {
+            <li class="@(i == current ? "active" : "")">
+                <a href="javascript:void(0)" class="page-link page-btn" data-page="@i">@i</a>
+            </li>
+        }
+
+        <li class="@(current == total ? "disabled" : "")">
+            <a href="javascript:void(0)" class="page-link page-btn" data-page="@(Math.Min(total, current + 1))">Next</a>
+        </li>
+    </ul>
+}
+

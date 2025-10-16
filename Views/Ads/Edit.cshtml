@@ -1,0 +1,379 @@
+﻿@model Demo.Models.Ad
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "";
+    var products = ViewBag.Products as List<Demo.Models.Product> ?? new List<Demo.Models.Product>();
+}
+
+<div class="order-edit-container">
+<h2>Edit Ad</h2>
+
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="form-row-single">
+        <div class="form-group">
+            <label asp-for="Title"></label>
+            <input asp-for="Title" class="form-control" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+    </div>
+
+    <!-- Link type 选择（Radio） -->
+    <div class="form-row-single">
+        <div class="form-group">
+            <label>Link Type</label><br />
+            <label style="margin-right:10px;">
+                <input type="radio" name="linkType" value="Product" id="linkTypeProduct" /> Product
+            </label>
+            <label>
+                <input type="radio" name="linkType" value="Url" id="linkTypeUrl" /> URL
+            </label>
+        </div>
+    </div>
+
+    <!-- Product 下拉 -->
+    <div class="form-row-single">
+        <div class="form-group" id="productGroup">
+            <label asp-for="ProductId">Product</label>
+            <select asp-for="ProductId" asp-items="@(new SelectList(products, "Id", "Name", Model?.ProductId))" class="form-control">
+                <option value="">-- none --</option>
+            </select>
+            <span asp-validation-for="ProductId" class="text-danger"></span>
+        </div>
+    </div>
+
+    <!-- URL 输入 -->
+    <div class="form-row-single">
+        <div class="form-group" id="urlGroup">
+            <label asp-for="Url"></label>
+            <input asp-for="Url" class="form-control" id="urlInput" />
+            <span asp-validation-for="Url" class="text-danger"></span>
+        </div>
+
+    </div>
+
+        <div class="form-row-single">
+    <div class="form-group">
+        <label asp-for="DisplayOrder"></label>
+                <input asp-for="DisplayOrder" class="form-control" type="number" min="1" step="1" />
+        <span asp-validation-for="DisplayOrder" class="text-danger"></span>
+    </div>
+
+    <div class="form-group form-check">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label"></label>
+    </div>
+    </div>
+
+        <div class="form-row-single">
+
+    <div class="form-group">
+        <label>Current Image</label><br />
+        @if (!string.IsNullOrEmpty(Model.ImagePath))
+        {
+            <img src="@Model.ImagePath" alt="Ad Image" width="200" class="mb-2" />
+        }
+        else
+        {
+            <p>No image uploaded.</p>
+        }
+    </div>
+    </div>
+    
+
+    <div class="form-group">
+        <label>Upload New Image (optional)</label>
+        <input type="file" name="newImage" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var productGroup = document.getElementById("productGroup");
+            var urlGroup = document.getElementById("urlGroup");
+            var rProduct = document.getElementById("linkTypeProduct");
+            var rUrl = document.getElementById("linkTypeUrl");
+            var urlInput = document.getElementById("urlInput");
+            var productSelect = document.querySelector("select[name='ProductId']");
+
+            // 根据模型初始值设置单选按钮和显示状态
+            // 如果 Model.Url 有值，则选中 URL 单选按钮并显示 URL 组
+            // 否则，选中 Product 单选按钮并显示 Product 组
+            var initialUrlValue = '@(Model.Url ?? "")';
+            if (initialUrlValue.trim().length > 0) {
+                rUrl.checked = true;
+                productGroup.style.display = "none";
+                urlGroup.style.display = "block";
+            } else {
+                rProduct.checked = true;
+                productGroup.style.display = "block";
+                urlGroup.style.display = "none";
+            }
+
+            // 监听 Product 单选按钮变化
+            rProduct.addEventListener("change", function () {
+                if (this.checked) {
+                    productGroup.style.display = "block";
+                    urlGroup.style.display = "none";
+                    if (urlInput) urlInput.value = ""; // 清空 URL 输入框
+                }
+            });
+
+            // 监听 URL 单选按钮变化
+            rUrl.addEventListener("change", function () {
+                if (this.checked) {
+                    productGroup.style.display = "none";
+                    urlGroup.style.display = "block";
+                    if (productSelect) productSelect.value = ""; // 清空 Product 选择
+                }
+            });
+
+            // 监听 URL 输入框输入事件
+            // 如果用户开始在 URL 输入框输入内容，自动切换到 URL 模式
+            if (urlInput) {
+                urlInput.addEventListener("input", function () {
+                    // 只有当 URL 输入框有值，且当前不是 URL 模式时才切换
+                    if (this.value.trim().length > 0 && !rUrl.checked) {
+                        rUrl.checked = true;
+                        productGroup.style.display = "none";
+                        urlGroup.style.display = "block";
+                        if (productSelect) productSelect.value = ""; // 清空 Product 选择
+                    }
+                    // 如果 URL 输入框被清空，且当前是 URL 模式，则切换回 Product 模式（或根据实际需求决定）
+                    else if (this.value.trim().length === 0 && rUrl.checked) {
+                        rProduct.checked = true; // 切换回 Product 模式
+                        productGroup.style.display = "block";
+                        urlGroup.style.display = "none";
+                        // 不清空 productSelect.value，让用户自行选择或保留原值
+                    }
+                });
+            }
+            // 同样，为 productSelect 添加 change 事件，以处理用户选择产品时的情况
+            if (productSelect) {
+                productSelect.addEventListener("change", function() {
+                    // 如果用户选择了产品，且当前不是 Product 模式，则切换到 Product 模式
+                    if (this.value.trim().length > 0 && !rProduct.checked) {
+                        rProduct.checked = true;
+                        productGroup.style.display = "block";
+                        urlGroup.style.display = "none";
+                        if (urlInput) urlInput.value = ""; // 清空 URL 输入框
+                    }
+                });
+            }
+        });
+    </script>
+}
+
+<style>
+
+    /* container */
+    .order-edit-container {
+        max-width: 900px;
+        margin: 30px auto;
+        padding: 22px;
+        border: 1px solid #e6e6e6;
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+        .order-edit-container h2 {
+            text-align: center;
+            margin-bottom: 18px;
+            color: #333;
+            font-size: 1.4rem;
+        }
+
+    .alert {
+        padding: 12px;
+        margin-bottom: 18px;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .form-row-single {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+        .form-row-single .form-label {
+            width: 160px;
+            min-width: 120px;
+            font-weight: 700;
+            color: #444;
+            margin-top: 6px;
+        }
+
+        .form-row-single .form-control-area {
+            flex: 1 1 520px;
+        }
+
+    .conditional-field {
+        margin-top: 8px;
+    }
+
+    .form-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .form-group label{
+            width: 120px;
+            margin-bottom: 10px;
+        }
+
+
+        .form-group .form-control {
+            flex: 1;
+        }
+
+
+    label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        color: #444;
+    }
+
+    .form-control {
+        flex: 1;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 15px;
+    }
+
+        .form-control:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(0,123,255,0.06);
+        }
+
+    .text-danger {
+        color: #c0392b;
+    }
+
+    .switch-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+        .switch-label input[type="checkbox"] {
+            transform: scale(1.02);
+            margin-right: 6px;
+        }
+
+    .order-items-block {
+        margin-top: 6px;
+    }
+
+    .order-items-wrapper {
+        border: 1px solid #f0f0f0;
+        padding: 10px;
+        border-radius: 6px;
+        background: #fafafa;
+    }
+
+    .order-items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+        .order-items-table th, .order-items-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        .order-items-table thead th {
+            font-weight: 700;
+            color: #444;
+            background: transparent;
+        }
+
+    .voucher-inline {
+        color: #c0392b;
+        font-weight: 700;
+    }
+
+    .order-items-actions {
+        display: flex;
+        justify-content: flex-start;
+        gap: 8px;
+        margin-top: 6px;
+    }
+
+    .btn {
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background-color: #e74c3c;
+        color: #fff;
+    }
+
+        .btn-primary:hover {
+            background-color: #c0392b;
+        }
+
+    .btn-secondary {
+        background-color: #95a5a6;
+        color: #fff;
+    }
+
+        .btn-secondary:hover {
+            background-color: grey;
+            color: #fff;
+        }
+
+    .btn-danger {
+        background-color: #e74c3c;
+        color: white;
+    }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 6px;
+    }
+</style>

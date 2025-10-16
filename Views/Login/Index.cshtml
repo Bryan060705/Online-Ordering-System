@@ -1,0 +1,385 @@
+﻿@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="login-container">
+    <h2>Login to X Burger</h2>
+
+    <form asp-action="Index" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="form-group">
+            <label for="identifier">Username or Email:</label>
+            <input type="text" id="identifier" name="identifier" class="form-control" required
+                   placeholder="Enter your username or email " />
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" class="form-control" required
+                   placeholder="Enter your password" />
+        </div>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">@ViewBag.Error</div>
+        }
+
+        <button type="submit" class="btn btn-primary btn-block">Login</button>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" id="btnScan" class="btn btn-secondary">Scan</button>
+            <button type="button" id="btnRegister" onclick="window.location.href='/Account/Register'" class="btn btn-success">Register Account</button>
+            <button type="button" id="btnForgetPassword" class="btn btn-link">Forget Password</button>
+        </div>
+
+
+    </form>
+</div>
+
+<!-- QR Scanner modal -->
+<div id="qrModal" style="display:none; position:fixed; inset:0; background: rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:2000;">
+    <div style="background:white; padding:16px; border-radius:8px; width:520px; max-width:95%;">
+        <h3>Scan QR code</h3>
+        <div id="cameraSelectContainer" style="margin-bottom:8px;"></div>
+        <div id="qr-reader" style="width:100%; height:360px;"></div>
+        <div style="margin-top:10px;">
+            <button id="btnCloseScanner" class="btn">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Forget Password Modal -->
+<div id="forgetPasswordModal" style="display:none; position:fixed; inset:0; background: rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:2000;">
+    <div style="background:white; padding:16px; border-radius:8px; width:400px; max-width:95%;">
+        <h3>Reset Password</h3>
+        <form asp-action="ForgetPassword" method="post" id="forgetPasswordForm">
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="resetEmail">Enter your email:</label>
+                <input type="email" id="resetEmail" name="email" class="form-control" required
+                       placeholder="Your registered email" />
+            </div>
+            <div id="forgetPasswordMessage" style="margin:10px 0;"></div>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button type="submit" class="btn btn-primary">Send Reset Link</button>
+                <button type="button" id="btnCloseForgetPassword" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .btn-block {
+        width: 100%;
+        margin-top: 10px;
+        margin-bottom: 15px;
+    }
+
+    .btn-group-vertical {
+        display: flex;
+        flex-direction: column;
+        gap: 10px; /* 按钮之间间距 */
+    }
+
+        .btn-group-vertical .btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+    .btn-success {
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        transition: background-color 0.3s;
+    }
+
+        .btn-success:hover {
+            background-color: #1e8449;
+        }
+
+
+
+    .login-container {
+        max-width: 400px;
+        margin: 40px auto;
+        padding: 25px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+        .login-container h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #333;
+        }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #555;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+        box-sizing: border-box; 
+    }
+
+        .form-control:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+    .alert {
+        padding: 12px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .btn-primary {
+        flex: 1;
+        background-color: #e74c3c;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+
+        .btn-primary:hover {
+            background-color: #c0392b;
+        }
+
+    .btn-secondary,
+    .btn-success,
+    .btn-link {
+        flex: 1;
+        padding: 12px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: bold;
+    }
+</style>
+
+@section Scripts {
+    <!-- html5-qrcode -->
+    <script src="/js/html5-qrcode.min.js"></script>
+
+    <script>
+        const btnScan = document.getElementById("btnScan");
+        const qrModal = document.getElementById("qrModal");
+        const btnCloseScanner = document.getElementById("btnCloseScanner");
+        const cameraSelectContainer = document.getElementById("cameraSelectContainer");
+        let html5QrCode = null;
+        let currentCameraId = null;
+        let cameras = [];
+
+        function isSecureContext() {
+            return location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        }
+
+        // 扫描成功回调
+        async function onScanSuccess(decodedText, decodedResult) {
+            try {
+                // 自动填充并提交表单
+                if (decodedText.includes(":")) {
+                    const parts = decodedText.split(":");
+                    const email = parts[0];
+                    const pwd = parts.slice(1).join(":");
+                    document.getElementById("identifier").value = email;
+                    document.getElementById("password").value = pwd;
+                    // stop scanner then submit
+                    if (html5QrCode) {
+                        await html5QrCode.stop().catch(e => console.warn(e));
+                    }
+                    qrModal.style.display = "none";
+                    document.querySelector("form").submit();
+                    return;
+                }
+
+                const resp = await fetch("/Login/QRCodeLogin", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "token=" + encodeURIComponent(decodedText)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    // login success -> redirect
+                    window.location.href = "/";
+                } else {
+                    alert(data.message || "Invalid token");
+                }
+            } catch (ex) {
+                console.error("onScanSuccess error:", ex);
+                alert("Scan processing error: " + (ex.message || ex));
+            } finally {
+                if (html5QrCode) {
+                    html5QrCode.stop().catch(e => console.warn(e));
+                }
+                qrModal.style.display = "none";
+            }
+        }
+
+        // 扫描失败回调（
+        function onScanFailure(error) {
+        }
+
+        btnScan.addEventListener("click", async () => {
+            if (!isSecureContext()) {
+                alert("Camera access requires HTTPS or localhost. Please run the site as https://localhost or trust the dev certificate.");
+                return;
+            }
+
+            qrModal.style.display = "flex";
+
+            try {
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("qr-reader");
+                }
+                cameras = await Html5Qrcode.getCameras();
+                if (!cameras || cameras.length === 0) {
+                    alert("No cameras found on this device.");
+                    return;
+                }
+
+                cameraSelectContainer.innerHTML = ""; 
+                if (cameras.length > 1) {
+                    const select = document.createElement("select");
+                    select.id = "cameraSelect";
+                    select.style.marginBottom = "8px";
+                    cameras.forEach((cam, idx) => {
+                        const opt = document.createElement("option");
+                        opt.value = cam.id;
+                        opt.text = cam.label || ("Camera " + (idx + 1));
+                        select.appendChild(opt);
+                    });
+                    cameraSelectContainer.appendChild(select);
+
+                    select.addEventListener("change", async () => {
+                        currentCameraId = select.value;
+                        try {
+                            await html5QrCode.stop();
+                        } catch (e) { /* ignore */ }
+                        await html5QrCode.start(currentCameraId, { fps: 10, qrbox: { width: 300, height: 300 } }, onScanSuccess, onScanFailure);
+                    });
+
+                    currentCameraId = select.value;
+                } else {
+                    currentCameraId = cameras[0].id;
+                }
+
+                // 开始扫描
+                await html5QrCode.start(
+                    currentCameraId,
+                    { fps: 10, qrbox: { width: 300, height: 300 } },
+                    onScanSuccess,
+                    onScanFailure
+                );
+            } catch (ex) {
+                console.error("Camera error:", ex);
+                alert("Camera error: " + (ex.message || ex));
+            }
+        });
+
+        btnCloseScanner.addEventListener("click", async () => {
+            if (html5QrCode) {
+                try {
+                    await html5QrCode.stop();
+                } catch (e) {
+                    console.warn("stop error:", e);
+                }
+            }
+            qrModal.style.display = "none";
+        });
+
+        // 页面卸载时确保停止相机
+        window.addEventListener("beforeunload", async () => {
+            if (html5QrCode) {
+                try { await html5QrCode.stop(); } catch (e) {}
+            }
+        });
+
+                const btnForgetPassword = document.getElementById("btnForgetPassword");
+        const forgetPasswordModal = document.getElementById("forgetPasswordModal");
+        const btnCloseForgetPassword = document.getElementById("btnCloseForgetPassword");
+        const forgetPasswordForm = document.getElementById("forgetPasswordForm");
+        const forgetPasswordMessage = document.getElementById("forgetPasswordMessage");
+
+        btnForgetPassword.addEventListener("click", () => {
+            forgetPasswordModal.style.display = "flex";
+        });
+
+        btnCloseForgetPassword.addEventListener("click", () => {
+            forgetPasswordModal.style.display = "none";
+            forgetPasswordMessage.innerHTML = "";
+        });
+
+        // 处理忘记密码表单提交
+        forgetPasswordForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(forgetPasswordForm);
+            const email = formData.get("email");
+
+            try {
+                const response = await fetch("/Login/ForgetPassword", {
+                    method: "POST",
+                    headers: {
+                        "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value,
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: `email=${encodeURIComponent(email)}`
+                });
+
+                const text = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, "text/html");
+                const message = doc.querySelector(".alert-success") || doc.querySelector(".alert-danger") || doc.querySelector(".field-validation-error");
+
+                if (message) {
+                    forgetPasswordMessage.innerHTML = message.outerHTML;
+
+                    // 如果成功，清空表单
+                    if (message.classList.contains("alert-success")) {
+                        forgetPasswordForm.reset();
+
+                        // 3秒后自动关闭模态框
+                        setTimeout(() => {
+                            forgetPasswordModal.style.display = "none";
+                        }, 3000);
+                    }
+                }
+            } catch (error) {
+                forgetPasswordMessage.innerHTML = `<div class="alert alert-danger">An error occurred. Please try again.</div>`;
+            }
+        });
+
+
+    </script>
+}

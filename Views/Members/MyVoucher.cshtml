@@ -1,0 +1,195 @@
+﻿@model IEnumerable<Demo.Models.MemberVoucher>
+
+@{
+    ViewData["Title"] = "";
+}
+
+<div class="voucher-container">
+    <h2>🎟️ My Vouchers</h2>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-info">@TempData["Message"]</div>
+    }
+
+    <div class="table-responsive">
+        <table class="voucher-table">
+            <thead>
+                <tr>
+                    <th>Voucher Name</th>
+                    <th>Product</th>
+                    <th>Discounted Price</th>
+                    <th>Expiry Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var statusClass = item.IsUsed ? "used" : (item.ExpiryDate <= DateTime.Now ? "expired" : "active");
+
+                    <tr class="@statusClass">
+                        <td>@item.Voucher.Name</td>
+                        <td>@item.Voucher.Product.Name</td>
+                        <td>RM @item.Voucher.DiscountedPrice</td>
+                        <td>@item.ExpiryDate.ToString("yyyy-MM-dd")</td>
+                        <td>
+                            @if (item.IsUsed)
+                            {
+                                <span class="badge badge-secondary">Used</span>
+                            }
+                            else if (item.ExpiryDate <= DateTime.Now)
+                            {
+                                <span class="badge badge-danger">Expired</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-success">Available</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!item.IsUsed && item.ExpiryDate > DateTime.Now)
+                            {
+                                <button class="btn btn-primary use-voucher" data-voucher-id="@item.Id">Use This Voucher</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-secondary" disabled>Not Available</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('.use-voucher').click(function () {
+                var voucherId = $(this).data('voucher-id');
+
+                // 检查Voucher是否已被使用
+                $.get('/Members/CheckVoucherUsed?id=' + voucherId, function (data) {
+                    if (data.isUsed) {
+                        alert('This Voucher is Used');
+                    } else {
+                        // 通过 AJAX 把 voucher 对应的商品加入购物车
+                        $.post('/Cart/AddVoucherToCart', { memberVoucherId: voucherId }, function (resp) {
+                            if (resp.success) {
+                                // 跳到购物车页面查看（也可以改成 location.reload()）
+                                window.location.href = '/Cart';
+                            } else {
+                                alert(resp.message || 'Failed to add voucher to cart.');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}
+
+<style>
+    .voucher-container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+        .voucher-container h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+        }
+
+    .voucher-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+    }
+
+        .voucher-table thead {
+            background-color: #f8f9fa;
+        }
+
+        .voucher-table th, .voucher-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        .voucher-table tr:hover {
+            background-color: #f1f7ff;
+            transition: 0.3s;
+        }
+
+        /* 状态颜色 */
+        .voucher-table tr.active td {
+            background-color: #fdfdfd;
+        }
+
+        .voucher-table tr.used td {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .voucher-table tr.expired td {
+            background-color: #fff5f5;
+            color: #c0392b;
+        }
+
+    /* Badge 样式 */
+    .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        font-size: 13px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .badge-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .badge-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    /* 按钮美化 */
+    .btn {
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: bold;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .btn-primary {
+        background-color: #3498db;
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+    .btn-secondary {
+        background-color: #bdc3c7;
+        color: white;
+    }
+</style>

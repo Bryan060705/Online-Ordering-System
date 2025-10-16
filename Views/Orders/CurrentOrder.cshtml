@@ -1,0 +1,205 @@
+﻿@model Demo.Models.Order
+
+@{
+    ViewBag.Title = "";
+}
+
+<style>
+    /* 容器 */
+    .current-order-container {
+        max-width: 900px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .current-order-container h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #333;
+    }
+
+    .order-info p {
+        font-size: 16px;
+        margin: 5px 0;
+        color: #555;
+    }
+
+    /* 表格 */
+    table.order-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    table.order-table th, table.order-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    table.order-table th {
+        background-color: #007bff;
+        color: #fff;
+        font-weight: 600;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+
+    table.order-table tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    table.order-table tr:hover {
+        background-color: #e6f0ff;
+    }
+
+    table.order-table tfoot td {
+        font-weight: bold;
+        font-size: 16px;
+        border-top: 2px solid #007bff;
+    }
+
+    /* 按钮组 */
+    .order-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 15px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .order-actions .btn {
+        min-width: 140px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.2s ease;
+    }
+
+    .order-actions .btn:hover {
+        opacity: 0.9;
+    }
+
+    /* Voucher 高亮 */
+    .voucher-item {
+        color: #d9534f; /* 红色 */
+        font-weight: bold;
+    }
+
+    /* 空订单提示 */
+    .no-order {
+        text-align: center;
+        font-size: 18px;
+        color: #666;
+        margin-top: 30px;
+    }
+
+    <style >
+    .order-actions .btn {
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    /* Hover 效果 */
+    .order-actions .btn:hover {
+        filter: brightness(85%); /* 按钮变深 */
+        cursor: pointer;
+    }
+</style>
+
+<div class="current-order-container">
+    <h2>Current Order</h2>
+
+    @if (Model == null)
+    {
+        <p class="no-order">@ViewBag.Message</p>
+        <div class="order-actions" style="margin-top:20px;">
+            
+        <form action="/" method="get" style="display:inline;">
+            <button type="submit" class="btn btn-secondary">Back to Menu</button>
+        </form>
+        </div>
+    }
+    else
+    {
+        <div class="order-info">
+            <p><strong>Order Date:</strong> @Model.OrderDate.ToString("yyyy-MM-dd HH:mm")</p>
+            <p>
+                <strong>Dining Option:</strong>
+                @(Model.IsTakeAway ? "Take Away" : "Dine In")
+                @if (!Model.IsTakeAway)
+                {
+                    // Dine In -> show table name if available (fallback to "N/A")
+                    <span> — Table: @(Model.Table != null ? Html.Encode(Model.Table.Name) : "N/A")</span>
+                }
+                else
+                {
+                    // Take Away -> show Order Id
+                    <span> — Order Id: @Model.Id</span>
+                }
+            </p>
+
+        </div>
+
+        <h3>Order Items</h3>
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.OrderItems)
+                {
+                    <tr>
+                        <td>
+                            @if (item.IsVoucher)
+                            {
+                                <span class="voucher-item">VoucherItem~ @item.DisplayName</span>
+                            }
+                            else
+                            {
+                                @item.DisplayName
+                            }
+                        </td>
+                        <td>@item.Quantity</td>
+                        <td>@item.UnitPrice.ToString("C")</td>
+                        <td>@((item.UnitPrice * item.Quantity).ToString("C"))</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="text-align: right;"><strong>Total:</strong></td>
+                    <td><strong>@Model.TotalPrice.ToString("C")</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="order-actions" style="margin-top:20px;">
+            <form action="/" method="get" style="display:inline;">
+                <button type="submit" class="btn btn-secondary">Continue Shopping</button>
+            </form>
+
+            <form action="/Cart" method="get" style="display:inline;margin-left:10px;">
+                <button type="submit" class="btn btn-primary">Go to Cart</button>
+            </form>
+
+            <!-- Pay按钮现在不需要 -->
+            @* @if (Model.OrderItems.Any())
+                {
+                    <form asp-action="PayOrder" asp-controller="Cart" method="post" style="display: inline;">
+                        <input type="hidden" name="orderId" value="@Model.Id" />
+                        <button type="submit" class="btn btn-success">Pay Now</button>
+                    </form>
+                } *@
+
+        </div>
+
+}

@@ -1,0 +1,362 @@
+﻿@model IEnumerable<Demo.Models.Product>
+
+@{
+    ViewData["Title"] = "Products";
+}
+
+<div class="product-container">
+    <h2>📦 Product List</h2>
+
+    <!-- ✅ 搜索栏 (统一风格) -->
+    <div class="filter-card">
+        <form id="productSearchForm" class="d-flex align-items-center gap-2">
+            <!-- 搜索字段选择 -->
+            <select id="searchField" class="form-select w-auto">
+                <option value="name">Name</option>
+                <option value="price">Price</option>
+                <option value="active">Active</option>
+            </select>
+
+            <!-- 动态输入区域 -->
+            <div id="searchInputArea" class="d-flex align-items-center gap-2">
+                <!-- 默认 Name 输入框 -->
+                <input type="text" id="searchName" class="form-control" placeholder="Enter product name..." />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Search</button>
+            <button type="button" id="resetSearch" class="btn btn-secondary">Reset</button>
+        </form>
+    </div>
+
+
+    <p class="create-btn">
+        <a asp-action="Create" class="btn btn-primary">+ Create New</a>
+    </p>
+
+    <!-- ✅ 表格容器 (AJAX 动态更新这里) -->
+    <div id="productsTableContainer">
+        @* 初始加载显示全部产品 *@
+        <partial name="_ProductsTable" model="Model" />
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+            function loadProducts(page = 1) {
+            const field = document.getElementById("searchField").value;
+
+            let query = `field=${field}&page=${page}`;
+
+            if (field === "name") {
+                query += `&name=${encodeURIComponent(document.getElementById("searchName").value)}`;
+            }
+            else if (field === "price") {
+                query += `&minPrice=${document.getElementById("minPrice").value}`;
+                query += `&maxPrice=${document.getElementById("maxPrice").value}`;
+            }
+            else if (field === "active") {
+                query += `&active=${document.getElementById("isActive").value}`;
+            }
+
+            fetch(`/Products/Search?${query}`)
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById("productsTableContainer").innerHTML = html;
+
+                    
+                    document.querySelectorAll(".page-btn").forEach(btn => {
+                        btn.addEventListener("click", function () {
+                            loadProducts(this.dataset.page);
+                        });
+                    });
+                });
+        }
+
+
+        document.getElementById("productSearchForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            loadProducts(1);
+        });
+
+                document.getElementById("resetSearch").addEventListener("click", function () {
+            // 重置搜索字段为默认 (Name)
+            document.getElementById("searchField").value = "name";
+            updateSearchInput(); // 重新渲染输入框为 Name 类型
+
+            // 清空所有可能的输入框
+            const nameInput = document.getElementById("searchName");
+            if (nameInput) nameInput.value = "";
+
+            const minPrice = document.getElementById("minPrice");
+            if (minPrice) minPrice.value = "";
+
+            const maxPrice = document.getElementById("maxPrice");
+            if (maxPrice) maxPrice.value = "";
+
+            const isActive = document.getElementById("isActive");
+            if (isActive) isActive.value = "";
+
+            // ✅ 重新加载第一页，显示全部
+            loadProducts(1);
+        });
+
+
+        
+
+        // 页面首次加载
+        loadProducts(1);
+    </script>
+
+    <script>
+        function updateSearchInput() {
+            const field = document.getElementById("searchField").value;
+            const area = document.getElementById("searchInputArea");
+            area.innerHTML = ""; 
+
+            if (field === "name") {
+                area.innerHTML = `<input type="text" id="searchName" class="form-control" placeholder="Enter product name..." />`;
+            }
+            else if (field === "price") {
+                area.innerHTML = `
+                    <input type="number" step="0.01" id="minPrice" class="form-control" placeholder="Min Price" />
+                    <input type="number" step="0.01" id="maxPrice" class="form-control" placeholder="Max Price" />
+                `;
+            }
+            else if (field === "active") {
+                area.innerHTML = `
+                    <select id="isActive" class="form-select">
+                        <option value="">All</option>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                `;
+            }
+        }
+
+        document.getElementById("searchField").addEventListener("change", updateSearchInput);
+        updateSearchInput(); // 页面初始化
+    </script>
+
+}
+
+
+<style>
+    .product-container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+        .product-container h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+        }
+
+    .create-btn {
+        text-align: right;
+        margin-bottom: 15px;
+    }
+
+    .product-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+    }
+
+        .product-table thead {
+            background-color: #f8f9fa;
+        }
+
+        .product-table th, .product-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e9ecef;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .product-table tr:hover {
+            background-color: #f1f7ff;
+            transition: 0.3s;
+        }
+
+    .product-img {
+        width: 70px;
+        height: 70px;
+        object-fit: cover;
+        margin: 5px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+
+    /* 按钮统一风格 */
+    .btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-sm {
+        font-size: 12px;
+        padding: 5px 10px;
+    }
+
+    .btn-primary {
+        background-color: #3498db;
+    }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+    .btn-warning {
+        background-color: #f39c12;
+    }
+
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+
+    .btn-info {
+        background-color: #17a2b8;
+    }
+
+        .btn-info:hover {
+            background-color: #138496;
+        }
+
+    .btn-danger {
+        background-color: #e74c3c;
+    }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+    /* Filter card (same style as Orders) */
+    .filter-card {
+        max-width: 900px;
+        margin: 0 auto 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 14px 16px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        box-sizing: border-box;
+    }
+
+        .filter-card form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-card .form-label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+
+        .filter-card select.form-select,
+        .filter-card input.form-control {
+            padding: 9px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            min-width: 0;
+            box-shadow: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+            .filter-card select.form-select:focus,
+            .filter-card input.form-control:focus {
+                outline: none;
+                border-color: #bcd9ff;
+                box-shadow: 0 0 0 3px rgba(52,152,219,0.08);
+            }
+
+        .filter-card .col-md-3,
+        .filter-card .col-md-6 {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 250px;
+            min-width: 160px;
+        }
+
+        .filter-card .col-md-2 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 120px;
+            min-width: 110px;
+        }
+
+        .filter-card .btn {
+            padding: 9px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            height: 42px;
+            box-shadow: none;
+        }
+
+        .filter-card .btn-secondary {
+            background: #6c757d;
+            border: none;
+            color: #fff;
+        }
+
+        .filter-card .btn-primary {
+            background-color: #007bff;
+            border: none;
+            color: #fff;
+        }
+
+    /* 让分页水平排列 */
+    .pagination {
+        display: flex;
+        list-style: none;
+        padding-left: 0;
+        justify-content: center; /* 居中 */
+    }
+
+        .pagination li {
+            margin: 0 3px; /* 按钮间距 */
+        }
+
+        .pagination .page-link {
+            display: block;
+            padding: 6px 12px;
+            color: #007bff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+
+            .pagination .page-link:hover {
+                background-color: #f1f1f1;
+            }
+
+        .pagination .active .page-link {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .pagination .disabled .page-link {
+            color: #6c757d;
+            pointer-events: none;
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
+
+</style>

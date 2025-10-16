@@ -1,0 +1,342 @@
+﻿@model List<Demo.Models.CartItem>
+
+@{
+    ViewData["Title"] = "";
+}
+
+<div class="cart-container">
+    <h1 class="cart-title">Your Cart</h1>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <p class="no-cart">Your cart is empty.</p>
+        <div class="cart-actions">
+            <form action="/" method="get" style="display:inline;">
+                <button type="submit" class="btn btn-secondary">Back to Menu</button>
+            </form>
+        </div>
+    }
+    else
+    {
+        <table class="order-table cart-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Total</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="product-cell">
+                            @if (item.IsVoucherApplied)
+                            {
+                                <span class="voucher-item">@item.VoucherName x </span>
+                            }
+                            @item.ProductName
+                            @if (!string.IsNullOrEmpty(item.ImagePath))
+                            {
+                                <br />
+                                <img src="@item.ImagePath" alt="@item.ProductName" class="product-thumb" />
+                            }
+                        </td>
+                        <td>RM @item.UnitPrice.ToString("F2")</td>
+                        <td>
+                            @if (item.IsVoucherApplied)
+                            {
+                                <input type="number"
+                                       class="form-control quantity-input"
+                                       data-product-id="@item.ProductId"
+                                       data-member-voucher-id="@item.MemberVoucherId"
+                                       value="@item.Quantity"
+                                       min="1" max="99"
+                                       readonly disabled />
+                                <small class="text-muted">（Voucher）</small>
+                            }
+                            else
+                            {
+                                <input type="number"
+                                       class="form-control quantity-input"
+                                       data-product-id="@item.ProductId"
+                                       value="@item.Quantity"
+                                       min="1" max="99" />
+                            }
+                        </td>
+
+                        <td class="item-total">RM @item.Total.ToString("F2")</td>
+
+                        <td>
+                            <form asp-action="RemoveFromCart" method="post" style="display:inline;">
+                                <input type="hidden" name="productId" value="@item.ProductId" />
+                                @if (item.IsVoucherApplied && item.MemberVoucherId.HasValue)
+                                {
+                                    <input type="hidden" name="memberVoucherId" value="@item.MemberVoucherId" />
+                                }
+                                <button type="submit" class="rembtn">Remove</button>
+                            </form>
+                        </td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="cart-summary">
+            <h3 id="cartTotal" class="cart-total">Total: RM @Model.Sum(item => item.Total).ToString("F2")</h3>
+            <form asp-action="Checkout" method="post" class="confirm-form">
+                <button type="submit" class="btn btn-primary btn-lg">Confirm Order</button>
+            </form>
+        </div>
+    }
+</div>
+
+<!-- Voucher Modal (kept simple) -->
+<div id="voucherModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:8px; width:400px;">
+        <h3>Select Voucher</h3>
+        <div id="voucherList">
+            <!-- Vouchers will be loaded here -->
+        </div>
+        <button id="closeVoucherModal" class="btn btn-secondary mt-3">Cancel</button>
+    </div>
+</div>
+
+<style>
+
+    .rembtn{
+        padding: 5px;
+        text-decoration: none;
+        font-weight: 50;
+        color: #2c3e50;
+        background: #f5f5f5;
+        border-radius: 10px;
+    }
+
+    .rembtn:hover{
+            filter: brightness(85%);
+            cursor: pointer;
+    }
+
+    .cart-title {
+        text-align: center; /* 标题居中 */
+        margin-bottom: 18px;
+        color: #333;
+    }
+
+    /* 新增：cart-summary 用来把 Total 与按钮垂直排列并靠右 */
+    .cart-summary {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end; /* 右对齐 */
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .cart-total {
+        /* 靠右显示同时保持视觉间距 */
+        margin: 0;
+        font-weight: bold;
+        font-size: 1.25rem;
+    }
+
+    .confirm-form .btn {
+        min-width: 180px;
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-size: 15px;
+    }
+
+    /* 基本容器样式（参考 CurrentOrder.cshtml） */
+    .cart-container {
+        max-width: 900px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* 移除冲突的 h1 覆盖（原来有 text-align:left） */
+    /* .cart-container h1 { ... }  已删除，以免覆盖 .cart-title */
+
+    .no-cart {
+        text-align: center;
+        font-size: 18px;
+        color: #666;
+        margin: 20px 0;
+    }
+
+    /* 表格样式参考 CurrentOrder 的 order-table */
+    table.order-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+        table.order-table th, table.order-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e6e6e6;
+            vertical-align: middle;
+        }
+
+        table.order-table th {
+            background-color: #007bff;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        table.order-table tr:nth-child(even) {
+            background-color: #fbfbfb;
+        }
+
+        table.order-table tr:hover {
+            background-color: #f0f8ff;
+        }
+
+        table.order-table tfoot td {
+            font-weight: bold;
+            font-size: 16px;
+            border-top: 2px solid #007bff;
+        }
+
+    .product-thumb {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        margin-top: 8px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .product-cell {
+        max-width: 320px;
+    }
+
+    /* 数量输入 */
+    .quantity-input {
+        width: 80px;
+        display: inline-block;
+        padding: 6px 8px;
+        border-radius: 6px;
+    }
+
+    /* 按钮组 */
+    .cart-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+        .cart-actions .btn, .text-end .btn {
+            min-width: 140px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.15s ease;
+        }
+
+            .cart-actions .btn:hover, .text-end .btn:hover {
+                opacity: 0.95;
+                cursor: pointer;
+            }
+
+    /* Voucher 高亮 */
+    .voucher-item {
+        color: #d9534f; /* 红色 */
+        font-weight: bold;
+    }
+
+    .product-thumb {
+        width: 48px;
+        height: 48px;
+    }
+
+    .quantity-input {
+        width: 64px;
+    }
+
+    .cart-summary .btn {
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    .cart-summary .btn:hover {
+        filter: brightness(85%); /* 按钮变深 */
+        cursor: pointer;
+    }
+
+    .cart-actions .btn {
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    .cart-actions .btn:hover {
+        filter: brightness(85%); /* 按钮变深 */
+        cursor: pointer;
+    }
+
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // 数量输入监听（普通商品）
+            $('.quantity-input').on('input change', function () {
+                var $this = $(this);
+
+                // 如果是 voucher（带 member-voucher-id），不要处理
+                var memberVoucherId = $this.data('member-voucher-id');
+                if (memberVoucherId) return;
+
+                var productId = $this.data('product-id');
+                var quantity = parseInt($this.val());
+
+                // 自动修正范围
+                if (isNaN(quantity) || quantity < 1) quantity = 1;
+                if (quantity > 99) quantity = 99;
+                $this.val(quantity);
+
+                // AJAX 更新
+                $.post('/Cart/UpdateQuantity', { productId: productId, quantity: quantity }, function (data) {
+                    if (data.success) {
+                        var row = $('input[data-product-id="' + productId + '"]').closest('tr');
+                        row.find('.item-total').text("RM " + Number(data.itemTotal).toFixed(2));
+                        $('#cartTotal').text("Total: RM " + Number(data.cartTotal).toFixed(2));
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            });
+
+            // remove-voucher 按钮（AJAX）
+            $('.remove-voucher').click(function () {
+                var memberVoucherId = $(this).data('member-voucher-id');
+                if (!memberVoucherId) return;
+
+                $.post('/Cart/RemoveVoucher', { memberVoucherId: memberVoucherId }, function (data) {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Failed to remove voucher item.');
+                    }
+                });
+            });
+        });
+    </script>
+}

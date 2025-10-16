@@ -1,0 +1,52 @@
+﻿@model IEnumerable<Demo.Models.Product>
+
+<table class="product-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Images</th>
+            <th>Active</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>RM @item.Price</td>
+                <td>
+                    @if (item.Images != null && item.Images.Count > 0)
+                    {
+                        foreach (var img in item.Images)
+                        {
+                            <img src="@img.ImagePath" alt="product image" class="product-img" />
+                        }
+                    }
+                </td>
+                <td>
+                    <input type="checkbox" class="toggle-active" data-id="@item.Id" @(item.IsActive ? "checked" : "") />
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- ✅ 分页 -->
+@if (ViewBag.TotalPages >= 1)
+{
+    <ul class="pagination">
+        @for (int i = 1; i <= (int)ViewBag.TotalPages; i++)
+        {
+            <li class="@(i == ViewBag.CurrentPage ? "active" : "")">
+                <a href="javascript:void(0)" class="page-link page-btn" data-page="@i">@i</a>
+            </li>
+        }
+    </ul>
+}

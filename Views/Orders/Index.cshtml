@@ -1,0 +1,391 @@
+﻿@model IEnumerable<Demo.Models.Order>
+
+@{
+    ViewData["Title"] = "";
+    var isPaidFilter = ViewBag.IsPaid as bool?;
+}
+
+<div class="order-container">
+    <h2>📦 Orders</h2>
+
+    <!-- 搜索栏 -->
+    <div class="filter-card">
+        <form id="orderSearchForm" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="searchType" class="form-label">Search By</label>
+                <select id="searchType" class="form-select">
+                    <option value="orderId">Order ID</option>
+                    <option value="member">Member / Guest</option>
+                    <option value="table">Table / TakeAway</option>
+                    <option value="paid">Paid / Unpaid</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label for="searchKeyword" class="form-label">Keyword</label>
+                <input type="text" id="searchKeyword" class="form-control" placeholder="Enter keyword..." />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+            <div class="col-md-2">
+                <button type="button" id="resetSearch" class="btn btn-secondary w-100">Reset</button>
+            </div>
+        </form>
+    </div>
+
+    <p class="create-btn">
+        <a asp-action="Create" class="btn btn-primary">+ Create New</a>
+    </p>
+
+    <!-- 表格容器 -->
+    <div id="ordersTableContainer">
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Member</th>
+                    <th>Table</th>
+                    <th>Order Date</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in Model)
+                {
+                    <tr>
+                        <td>@order.Id</td>
+                        <td>@(order.Member != null ? $"#{order.Member.Id} ({order.Member.Username})" : "Guest")</td>
+                        <td>@(order.Table?.Name ?? "Take Away")</td>
+                        <td>@order.OrderDate.ToString("g")</td>
+                        <td>RM @order.TotalPrice.ToString("F2")</td>
+                        <td>
+                            @if (order.IsPaid)
+                            {
+                                <span class="badge badge-success">Paid</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-danger">Unpaid</span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@order.Id" class="btn btn-info btn-sm">Details</a>
+                            <a asp-action="Edit" asp-route-id="@order.Id" class="btn btn-warning btn-sm">Edit</a>
+                            <a asp-action="Delete" asp-route-id="@order.Id" class="btn btn-danger btn-sm">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info mt-3">
+            No orders found with the selected filter.
+        </div>
+    }
+
+
+<style>
+    .create-btn {
+        text-align: right;
+        margin-bottom: 15px;
+    }
+
+    .order-container {
+        max-width: 1100px;
+        margin: 30px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+        .order-container h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+        }
+
+    .filter-card {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .order-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+    }
+
+        .order-table thead {
+            background-color: #f8f9fa;
+        }
+
+        .order-table th, .order-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #e9ecef;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .order-table tr:hover {
+            background-color: #f1f7ff;
+            transition: 0.3s;
+        }
+
+    .item-list {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+    }
+
+        .item-list li {
+            margin-bottom: 3px;
+        }
+
+    .voucher-item {
+        color: #c0392b;
+        font-weight: bold;
+    }
+
+    /* Badge 样式 */
+    .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        font-size: 13px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .badge-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    /* 按钮统一风格 */
+    .btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-sm {
+        font-size: 12px;
+        padding: 5px 10px;
+    }
+
+    .btn-primary {
+        background-color: #3498db;
+    }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+    .btn-warning {
+        background-color: #f39c12;
+    }
+
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+
+    .btn-info {
+        background-color: #17a2b8;
+    }
+
+        .btn-info:hover {
+            background-color: #138496;
+        }
+
+    .btn-danger {
+        background-color: #e74c3c;
+    }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+    /* 让分页水平排列 */ 
+    .pagination {
+        display: flex;
+        list-style: none;
+        padding-left: 0;
+        justify-content: center; /* 居中 */
+    }
+
+        .pagination li {
+            margin: 0 3px; /* 按钮间距 */
+        }
+
+        .pagination .page-link {
+            display: block;
+            padding: 6px 12px;
+            color: #007bff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+
+            .pagination .page-link:hover {
+                background-color: #f1f1f1;
+            }
+
+        .pagination .active .page-link {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .pagination .disabled .page-link {
+            color: #6c757d;
+            pointer-events: none;
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
+
+    /* ========== Replace/upgrade .filter-card (Order search bar) ========== */
+    .filter-card {
+        max-width: 900px; /* 居中宽度（可根据需要改成 600/700） */
+        margin: 0 auto 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 14px 16px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        box-sizing: border-box;
+    }
+
+        /* 把表单变成类似 HomeIndex 的横向搜索条，移动端自动换行 */
+        .filter-card form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* 标签更紧凑一点 */
+        .filter-card .form-label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+
+        /* 统一 input / select 外观，与 HomeIndex 的风格接近 */
+        .filter-card select.form-select,
+        .filter-card input.form-control {
+            padding: 9px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            min-width: 0;
+            box-shadow: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+            /* focus 样式（和 HomeIndex 简洁风格相符） */
+            .filter-card select.form-select:focus,
+            .filter-card input.form-control:focus {
+                outline: none;
+                border-color: #bcd9ff;
+                box-shadow: 0 0 0 3px rgba(52,152,219,0.08);
+            }
+
+        /* 调整每个列容器在 flex 布局下的行为（保留 bootstrap 列宽的同时更可伸缩） */
+        .filter-card .col-md-3,
+        .filter-card .col-md-5 {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 250px; /* 可伸缩，保证在宽屏下合理比例 */
+            min-width: 160px; /* 防止过窄 */
+        }
+
+        /* 按钮列固定一点，视觉更平衡 */
+        .filter-card .col-md-2 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 120px;
+            min-width: 110px;
+        }
+
+        /* 按钮样式微调，靠近 HomeIndex 的蓝色按钮 */
+        .filter-card .btn {
+            padding: 9px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            height: 42px;
+            box-shadow: none;
+        }
+
+        /* Reset 按钮样式（灰色） */
+        .filter-card .btn-secondary {
+            background: #6c757d;
+            border: none;
+            color: #fff;
+        }
+
+        /* 搜索按钮（主按钮）颜色更靠近 HomeIndex 示例的蓝色 */
+        .filter-card .btn-primary {
+            background-color: #007bff;
+            border: none;
+            color: #fff;
+        }
+
+
+    
+</style>
+
+
+@section Scripts {
+    <script>
+        function loadOrders(page = 1) {
+            const type = document.getElementById("searchType").value;
+            const keyword = document.getElementById("searchKeyword").value;
+
+            fetch(`/Orders/Search?type=${type}&keyword=${encodeURIComponent(keyword)}&page=${page}`)
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById("ordersTableContainer").innerHTML = html;
+
+                    // ✅ 分页按钮点击事件
+                    document.querySelectorAll(".page-btn").forEach(btn => {
+                        btn.addEventListener("click", function () {
+                            loadOrders(this.dataset.page);
+                        });
+                    });
+                });
+        }
+
+        document.getElementById("orderSearchForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            loadOrders(1);
+        });
+
+        document.getElementById("resetSearch").addEventListener("click", function () {
+            document.getElementById("searchKeyword").value = "";
+            loadOrders(1);
+        });
+
+        // ✅ 首次加载
+        loadOrders(1);
+    </script>
+}

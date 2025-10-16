@@ -1,0 +1,308 @@
+﻿@model IEnumerable<Demo.Models.Order>
+
+@{
+    ViewData["Title"] = "";
+    int page = ViewBag.Page ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+}
+
+<div class="history-container">
+    <h2>📜 My Order History</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">You have no past orders.</div>
+    }
+
+    <div class="table-responsive">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th style="text-align:left;">Date</th>
+                    <th style="text-align:center;">Status</th>
+                    <th style="text-align:left;">Items</th>
+                    <th style="text-align:right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in Model)
+                {
+                    var statusClass = order.IsPaid ? "paid" : "unpaid";
+                    <tr class="@statusClass">
+                        <td style="text-align:left;">@order.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td style="text-align:center;">
+                            @if (order.IsPaid)
+                            {
+                                <span class="badge badge-success">Paid</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-danger">Unpaid</span>
+                            }
+                        </td>
+                        <td style="text-align:left;">
+                            <ul class="order-items-list">
+                                @foreach (var item in order.OrderItems)
+                                {
+                                    <li>
+                                        @if (item.IsVoucher)
+                                        {
+                                            <span class="voucher-tag">VoucherItem • </span>
+                                            <span class="item-name">@item.DisplayName</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="item-name">@item.DisplayName</span>
+                                        }
+                                        <span class="item-qty"> x @item.Quantity</span>
+                                        <span class="item-price"> (RM @String.Format("{0:0.00}", item.TotalPrice))</span>
+                                    </li>
+                                }
+                            </ul>
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="total-amount">RM @String.Format("{0:0.00}", order.OrderItems.Sum(i => i.TotalPrice))</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 分页控件 -->
+    <nav aria-label="Order history pagination" class="pagination-nav">
+        <ul class="pagination-list">
+            @{
+                var prevPage = page - 1;
+                var nextPage = page + 1;
+                // 计算页码显示范围：显示当前页附近的页码，最多 7 个（可调整）
+                int maxDisplay = 7;
+                int start = Math.Max(1, page - (maxDisplay / 2));
+                int end = Math.Min(totalPages, start + maxDisplay - 1);
+                if (end - start + 1 < maxDisplay)
+                {
+                    start = Math.Max(1, end - maxDisplay + 1);
+                }
+            }
+
+            <li class="page-item @(page == 1 ? "disabled" : "")">
+                @if (page == 1)
+                {
+                    <span class="page-link">« Prev</span>
+                }
+                else
+                {
+                    <a class="page-link" href="@Url.Action("History", "Orders", new { page = prevPage })">« Prev</a>
+                }
+            </li>
+
+            @if (start > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("History", "Orders", new { page = 1 })">1</a>
+                </li>
+                @if (start > 2)
+                {
+                    <li class="page-item disabled"><span class="page-ellipsis">…</span></li>
+                }
+            }
+
+            @for (int p = start; p <= end; p++)
+            {
+                if (p == page)
+                {
+                    <li class="page-item active"><span class="page-link">@p</span></li>
+                }
+                else
+                {
+                    <li class="page-item"><a class="page-link" href="@Url.Action("History", "Orders", new { page = p })">@p</a></li>
+                }
+            }
+
+            @if (end < totalPages)
+            {
+                if (end < totalPages - 1)
+                {
+                    <li class="page-item disabled"><span class="page-ellipsis">…</span></li>
+                }
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("History", "Orders", new { page = totalPages })">@totalPages</a>
+                </li>
+            }
+
+            <li class="page-item @(page == totalPages || totalPages == 0 ? "disabled" : "")">
+                @if (page >= totalPages)
+                {
+                    <span class="page-link">Next »</span>
+                }
+                else
+                {
+                    <a class="page-link" href="@Url.Action("History", "Orders", new { page = nextPage })">Next »</a>
+                }
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<style>
+    /* container card (match MyVoucher style) */
+    .history-container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        font-family: 'Roboto', sans-serif;
+    }
+
+        .history-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+    /* table base */
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+    }
+
+        .history-table thead {
+            background-color: #f8f9fa;
+        }
+
+        .history-table th, .history-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+        }
+
+        /* row hover */
+        .history-table tbody tr:hover {
+            background-color: #f1f7ff;
+            transition: 0.2s;
+        }
+
+    /* badges (same visual language as MyVoucher) */
+    .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        font-size: 13px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .badge-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    /* order items list */
+    .order-items-list {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+    }
+
+        .order-items-list li {
+            padding: 6px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: baseline;
+        }
+
+    .voucher-tag {
+        color: #c0392b;
+        font-weight: 700;
+        margin-right: 6px;
+    }
+
+    .item-name {
+        color: #212529;
+        font-weight: 600;
+    }
+
+    .item-qty, .item-price {
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .total-amount {
+        font-weight: 800;
+        color: #212529;
+    }
+
+    /* Pagination styles */
+    .pagination-nav {
+        margin-top: 16px;
+        text-align: center;
+    }
+
+    .pagination-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .page-item {
+        display: inline-block;
+    }
+
+    .page-link {
+        display: inline-block;
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: #f5f6f8;
+        color: #333;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .page-item.active .page-link {
+        background: #3498db;
+        color: #fff;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: default;
+        pointer-events: none;
+    }
+
+    .page-ellipsis {
+        padding: 8px 6px;
+        color: #666;
+    }
+
+    /* responsive tweaks for small screens */
+    @@media (max-width: 700px) {
+        .history-table th:nth-child(4), .history-table td:nth-child(4)
+
+    {
+        display: none; /* hide the total column on very small screens to save space */
+    }
+
+    .history-table th, .history-table td {
+        padding: 10px 8px;
+        font-size: 14px;
+    }
+
+    .history-container {
+        padding: 12px;
+        margin: 16px;
+    }
+
+    }
+</style>

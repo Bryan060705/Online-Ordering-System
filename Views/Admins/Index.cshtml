@@ -1,0 +1,186 @@
+﻿@model IEnumerable<Demo.Models.Admin>
+
+@{
+    ViewData["Title"] = "";
+}
+
+<div class="container">
+<h2>Admins</h2>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">+ Create New</a>
+</p>
+<table class="member-table">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.Id)</th>
+            <th>@Html.DisplayNameFor(model => model.Username)</th>
+            <th>@Html.DisplayNameFor(model => model.Email)</th>
+            <th>@Html.DisplayNameFor(model => model.IsSuperAdmin)</th>
+            <th>Photo</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-photo="@(string.IsNullOrEmpty(item.PhotoPath) ? "/images/default.png" : item.PhotoPath)">
+                <td>@item.Id</td>
+                <td>@item.Username</td>
+                <td>@item.Email</td>
+                <td>@item.IsSuperAdmin</td>
+                <td>
+                    <img src="@(string.IsNullOrEmpty(item.PhotoPath) ? "/images/default.png" : item.PhotoPath)"
+                         alt="Photo"
+                         style="width:40px;height:40px;border-radius:50%;" />
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning">Edit</a> 
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info">Details</a> 
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+
+<!-- 用来显示头像 -->
+<div id="photoTooltip" style="position: absolute; display:none; pointer-events:none; z-index:9999;">
+    <img id="tooltipImg" src="" alt="Preview"
+         style="max-width:150px; border:1px solid #ccc; border-radius:8px; background:#fff;" />
+</div>
+</div>
+@section Scripts {
+    <script>
+                document.addEventListener("DOMContentLoaded", function () {
+            const rows = document.querySelectorAll(".member-table tbody tr");
+            const tooltip = document.getElementById("photoTooltip");
+            const tooltipImg = document.getElementById("tooltipImg");
+
+            rows.forEach(row => {
+                row.addEventListener("mouseenter", function () {
+                    const photoPath = row.getAttribute("data-photo");
+                    if (photoPath) {
+                        tooltipImg.src = photoPath;
+                        tooltip.style.display = "block";
+                    }
+                });
+
+                row.addEventListener("mousemove", function (e) {
+                    tooltip.style.left = (e.pageX + 15) + "px";
+                    tooltip.style.top = (e.pageY + 15) + "px";
+                });
+
+                row.addEventListener("mouseleave", function () {
+                    tooltip.style.display = "none";
+                });
+            });
+        });
+    </script>
+}
+
+
+
+    <style>
+
+        .member-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+        }
+
+            .member-table thead {
+                background-color: #f8f9fa;
+            }
+
+            .member-table th, .member-table td {
+                padding: 12px 14px;
+                border-bottom: 1px solid #e9ecef;
+                text-align: center;
+                vertical-align: middle;
+            }
+
+            .member-table tr:hover {
+                background-color: #f1f7ff;
+                transition: 0.3s;
+            }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+            .container h2 {
+                text-align: center;
+                margin-bottom: 25px;
+                color: #2c3e50;
+            }
+
+        .create-btn {
+            text-align: right;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            font-size: 12px;
+            padding: 5px 10px;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+        }
+
+            .btn-primary:hover {
+                background-color: #2980b9;
+            }
+
+        .btn-warning {
+            background-color: #f39c12;
+        }
+
+            .btn-warning:hover {
+                background-color: #d68910;
+            }
+
+        .btn-info {
+            background-color: #17a2b8;
+        }
+
+            .btn-info:hover {
+                background-color: #138496;
+            }
+
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+
+            .btn-danger:hover {
+                background-color: #c0392b;
+            }
+
+    </style>

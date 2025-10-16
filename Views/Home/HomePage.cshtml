@@ -1,0 +1,51 @@
+﻿@{
+    ViewBag.Title = "Welcome";
+}
+
+<ul class="menu-grid">
+    @if (Context.Session.GetString("IsSuperAdmin") == "True")
+    {
+            <li><a href="/Admins">Manage Admins</a></li>
+    }
+    <li><a href="/Members">Manage Members</a></li>
+    <li><a href="/Products">Manage Products</a></li>
+    <li><a href="/Tables">Manage Tables</a></li>
+    <li><a href="/Orders">View Orders</a></li>
+    <li><a href="/Ads">Manage Ads</a></li>
+    <li><a href="/Vouchers">Manage Vouchers</a></li>
+</ul>
+
+<style>
+    .menu-grid {
+        list-style: none;
+        margin: 20px auto;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        max-width: 900px; 
+    }
+
+        .menu-grid li {
+            text-align: center;
+        }
+
+        .menu-grid a {
+            display: block;
+            padding: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            color: #2c3e50;
+            background: #f5f5f5;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+            .menu-grid a:hover {
+                background: #1abc9c;
+                color: #fff;
+                transform: translateY(-3px);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            }
+</style>

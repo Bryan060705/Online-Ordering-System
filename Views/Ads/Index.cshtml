@@ -1,0 +1,163 @@
+﻿@model IEnumerable<Demo.Models.Ad>
+@{
+    ViewBag.Title = "";
+}
+
+<div class="ads-con">
+<h2>Manage Ads</h2>
+
+    <p class="create-btn"><a href="/Ads/Create" class="btn btn-primary">+ Create New Ad</a></p>
+
+
+    <table class="adstable">
+    <thead>
+        <tr>
+            <th>Image</th>
+            <th>Title</th>
+            <th>Link</th>
+            <th>Order</th>
+            <th>Active</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var ad in Model)
+        {
+            <tr>
+                <td>
+                    @if (!string.IsNullOrEmpty(ad.ImagePath))
+                    {
+                        <img src="@ad.ImagePath" width="140" />
+                    }
+                </td>
+                <td>@ad.Title</td>
+                <td>
+                    @if (ad.ProductId != null)
+                    {
+                        <span>Product @ad.ProductId</span>
+                    }
+                    else if (!string.IsNullOrEmpty(ad.Url))
+                    {
+                        <a href="@ad.Url" target="_blank">@ad.Url</a>
+                    }
+                    else
+                    {
+                        <span>—</span>
+                    }
+                </td>
+                <td>@ad.DisplayOrder</td>
+                <td>@ad.IsActive</td>
+                <td>
+                        <div style="display:flex; gap:5px;">
+                    <a href="/Ads/Edit/@ad.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a href="/Ads/Delete/@ad.Id" class="btn btn-sm btn-danger">Delete</a>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+<style>
+
+    .adstable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+    }
+
+        .adstable thead {
+            background-color: #f8f9fa;
+        }
+
+        .adstable th, .adstable td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #e9ecef;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .adstable tr:hover {
+            background-color: #f1f7ff;
+            transition: 0.3s;
+        }
+
+    .ads-con{
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .ads-con h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #2c3e50;
+    }
+
+    .create-btn {
+        text-align: right;
+        margin-bottom: 15px;
+    }
+
+    .btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+        text-decoration: none;
+        color: white;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn-sm {
+        font-size: 12px;
+        padding: 5px 10px;
+    }
+
+    .btn-primary {
+        background-color: #3498db;
+        
+    }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+    .btn-warning {
+        background-color: #f39c12;
+    }
+
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+
+    .btn-info {
+        background-color: #17a2b8;
+    }
+
+        .btn-info:hover {
+            background-color: #138496;
+        }
+
+    .btn-danger {
+        background-color: #e74c3c;
+    }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+</style>
+

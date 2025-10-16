@@ -1,0 +1,376 @@
+﻿@model IEnumerable<Demo.Models.Member>
+
+@{
+    ViewData["Title"] = "";
+}
+
+<div class="member-container">
+    <h2>👥 Members List</h2>
+
+    <!-- Search bar -->
+    <div class="filter-card">
+        <form id="memberSearchForm" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="searchField" class="form-label">Search By</label>
+                <select id="searchField" class="form-select">
+                    <option value="id">ID</option>
+                    <option value="email">Email</option>
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label for="searchInputArea" class="form-label">Keyword</label>
+                <div id="searchInputArea">
+                    <input type="text" id="searchKeyword" class="form-control" placeholder="Enter ID or Email..." />
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+
+            <div class="col-md-1">
+                <button type="button" id="resetSearch" class="btn btn-secondary w-100">Reset</button>
+            </div>
+        </form>
+    </div>
+
+    <p class="create-btn">
+        <a asp-action="Create" class="btn btn-primary">+ Create New</a>
+    </p>
+
+    <div id="membersTableContainer">
+        @* 初始页面直接渲染 server-side 数据 *@
+        <partial name="_MembersTable" model="Model" />
+    </div>
+</div>
+
+<!-- 用来显示头像 tooltip -->
+<div id="photoTooltip" style="position: absolute; display:none; pointer-events:none; z-index:9999;">
+    <img id="tooltipImg" src="" alt="Preview"
+         style="max-width:150px; border:1px solid #ccc; border-radius:8px; background:#fff;" />
+</div>
+
+@section Scripts {
+    <script>
+        function updateSearchInput() {
+            const field = document.getElementById("searchField").value;
+            const area = document.getElementById("searchInputArea");
+            area.innerHTML = "";
+
+            if (field === "id") {
+                area.innerHTML = `<input type="number" id="searchKeyword" class="form-control" placeholder="Enter member ID..." />`;
+            } else {
+                area.innerHTML = `<input type="text" id="searchKeyword" class="form-control" placeholder="Enter email..." />`;
+            }
+        }
+
+        
+        function bindTooltipEvents() {
+            const rows = document.querySelectorAll(".member-table tbody tr");
+            const tooltip = document.getElementById("photoTooltip");
+            const tooltipImg = document.getElementById("tooltipImg");
+
+            
+            rows.forEach(row => {
+                const newRow = row.cloneNode(true);
+                row.parentNode.replaceChild(newRow, row);
+            });
+
+            const newRows = document.querySelectorAll(".member-table tbody tr");
+            newRows.forEach(row => {
+                row.addEventListener("mouseenter", function () {
+                    const photoPath = row.getAttribute("data-photo");
+                    if (photoPath) {
+                        tooltipImg.src = photoPath;
+                        tooltip.style.display = "block";
+                    }
+                });
+
+                row.addEventListener("mousemove", function (e) {
+                    tooltip.style.left = (e.pageX + 15) + "px";
+                    tooltip.style.top = (e.pageY + 15) + "px";
+                });
+
+                row.addEventListener("mouseleave", function () {
+                    tooltip.style.display = "none";
+                });
+            });
+        }
+
+        function loadMembers(page = 1) {
+            const field = document.getElementById("searchField").value;
+            const keywordEl = document.getElementById("searchKeyword");
+            const keyword = keywordEl ? keywordEl.value : "";
+
+            const params = new URLSearchParams();
+            params.append("field", field);
+            if (keyword) params.append("keyword", keyword);
+            params.append("page", page);
+
+            fetch(`/Members/Search?${params.toString()}`)
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById("membersTableContainer").innerHTML = html;
+
+                    // 绑定分页按钮
+                    document.querySelectorAll(".page-btn").forEach(btn => {
+                        btn.addEventListener("click", function () {
+                            loadMembers(this.dataset.page);
+                        });
+                    });
+
+                    // 重新绑定 tooltip 事件
+                    bindTooltipEvents();
+                })
+                .catch(err => {
+                    console.error("Load members failed", err);
+                });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // 初始化输入区域
+            document.getElementById("searchField").addEventListener("change", updateSearchInput);
+            updateSearchInput();
+
+            // 绑定表单 submit
+            document.getElementById("memberSearchForm").addEventListener("submit", function (e) {
+                e.preventDefault();
+                loadMembers(1);
+            });
+
+            // Reset 按钮
+            document.getElementById("resetSearch").addEventListener("click", function () {
+                document.getElementById("searchField").value = "id";
+                updateSearchInput();
+                // 清空输入
+                const inEl = document.getElementById("searchKeyword");
+                if (inEl) inEl.value = "";
+                loadMembers(1);
+            });
+
+            bindTooltipEvents();
+
+        });
+
+            
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            
+            loadMembers(1);
+        });
+    </script>
+
+}
+
+<style>
+    .member-container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+        .member-container h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+        }
+
+    .create-btn {
+        text-align: right;
+        margin-bottom: 15px;
+    }
+
+    .member-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+    }
+
+        .member-table thead {
+            background-color: #f8f9fa;
+        }
+
+        .member-table th,
+        .member-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        .member-table tr:hover {
+            background-color: #f1f7ff;
+            transition: 0.3s;
+        }
+
+    /* Filter card (same style as Orders) */
+    .filter-card {
+        max-width: 900px;
+        margin: 0 auto 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 14px 16px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        box-sizing: border-box;
+    }
+
+        .filter-card form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-card .form-label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+
+        .filter-card select.form-select,
+        .filter-card input.form-control {
+            padding: 9px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            min-width: 0;
+            box-shadow: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+            .filter-card select.form-select:focus,
+            .filter-card input.form-control:focus {
+                outline: none;
+                border-color: #bcd9ff;
+                box-shadow: 0 0 0 3px rgba(52,152,219,0.08);
+            }
+
+        .filter-card .col-md-3,
+        .filter-card .col-md-6 {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 250px;
+            min-width: 160px;
+        }
+
+        .filter-card .col-md-2 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 120px;
+            min-width: 110px;
+        }
+
+        .filter-card .btn {
+            padding: 9px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            height: 42px;
+            box-shadow: none;
+        }
+
+        .filter-card .btn-secondary {
+            background: #6c757d;
+            border: none;
+            color: #fff;
+        }
+
+        .filter-card .btn-primary {
+            background-color: #007bff;
+            border: none;
+            color: #fff;
+        }
+
+    /* Pagination style */
+    .pagination {
+        display: flex;
+        list-style: none;
+        padding-left: 0;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 12px;
+    }
+
+        .pagination li {
+            margin: 0;
+        }
+
+    .page-link {
+        display: block;
+        padding: 6px 10px;
+        color: #007bff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .pagination .active .page-link {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+
+    .pagination .disabled .page-link {
+        color: #6c757d;
+        pointer-events: none;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-sm {
+        font-size: 12px;
+        padding: 5px 10px;
+    }
+
+    .btn-primary {
+        background-color: #3498db;
+    }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+    .btn-warning {
+        background-color: #f39c12;
+    }
+
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+
+    .btn-info {
+        background-color: #17a2b8;
+    }
+
+        .btn-info:hover {
+            background-color: #138496;
+        }
+
+    .btn-danger {
+        background-color: #e74c3c;
+    }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+</style>

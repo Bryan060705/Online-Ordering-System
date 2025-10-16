@@ -1,0 +1,186 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title</title>
+    <link rel="shortcut icon" href="/images/burger.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+    <link rel="stylesheet" href="/css/app.css" asp-append-version="true">
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    @RenderSection("head", false)
+</head>
+<body>
+    @Html.AntiForgeryToken()
+
+    <header>
+        <h1>X Burger</h1>
+        <div class="header-actions">
+            @if (Context.Session.GetString("AdminUsername") != null)
+            {
+                <span>Welcome, Admin @Context.Session.GetString("AdminUsername")!</span>
+                <a href="/Login/Logout" class="btn-logout">Logout</a>
+            }
+            else if (Context.Session.GetString("MemberEmail") != null)
+            {
+                <div class="dropdown" style="position:relative; display:inline-block;">
+                    <img src="@Context.Session.GetString("MemberPhoto")"
+                         alt="Avatar"
+                         style="width:40px; height:40px; border-radius:50%; cursor:pointer;"
+                         onclick="toggleDropdown()" />
+
+                    <div id="userDropdown"
+                         style="display:none; position:absolute; right:0; background:white; border:1px solid #ccc; border-radius:8px; min-width:150px; z-index:1000;">
+                        <div style="padding:10px; border-bottom:1px solid #eee;">
+                            <strong>@Context.Session.GetString("MemberUsername")</strong>
+                        </div>
+                        <a href="/Members/UserPage" style="display:block; padding:10px; text-decoration:none; color:black;">User Page</a>
+                        <a href="/Members/MyVoucher" style="display:block; padding:10px; text-decoration:none; color:black;">My Voucher</a>
+                        <a href="/Members/RedeemVoucher" style="display:block; padding:10px; text-decoration:none; color:black;">Redeem Voucher</a>
+                        <a href="/Orders/History" style="display:block; padding:10px; text-decoration:none; color:black;">Order History</a>
+                        <a href="/Login/Logout" style="display:block; padding:10px; text-decoration:none; color:red;">Log Out</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <a href="/Login" class="btn-login">Login</a>
+            }
+        </div>
+    </header>
+
+    <nav>
+        @if (Context.Session.GetString("AdminUsername") != null)
+        {
+            <!-- Admin 登录时只显示 Admin 链接 -->
+            <a href="/Home/HomePage">Admin</a>
+            <div></div>
+        }
+        else
+        {
+
+            <!-- 未登录或 Member 登录时显示 Menu 链接 -->
+            <a href="/">Menu</a>
+            <a href="/Cart">Cart</a>
+            <a href="/Orders/CurrentOrder">View Order</a>
+            <div></div>
+
+            <!-- 显示用餐选项 + Change按钮 -->
+            @if (Context.Session.GetString("DiningOption") != null)
+            {
+                <span class="dinetake">
+                    Dining: @Context.Session.GetString("DiningOption")
+                </span>
+                <button id="btnChangeDining" class="btnDineTake" onclick="checkOrderBeforeChange()">Change</button>
+            }
+        }
+
+
+    </nav>
+
+    <main>
+        <h1>@ViewBag.Title</h1>
+        @RenderBody()
+    </main>
+
+    <footer>
+        Developed by <b>X Burger</b> &middot;
+        Copyrighted &copy; @DateTime.Today.Year
+    </footer>
+
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/jquery.unobtrusive-ajax.min.js"></script>
+    <script src="/js/jquery.validate.min.js"></script>
+    <script src="/js/jquery.validate.unobtrusive.min.js"></script>
+    <script src="/js/app.js" asp-append-version="true"></script>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+
+    @RenderSection("foot", false)
+    @RenderSection("Scripts", required: false)
+
+    <script>
+        function toggleDropdown() {
+            var dd = document.getElementById("userDropdown");
+            dd.style.display = (dd.style.display === "block") ? "none" : "block";
+        }
+
+        // 点击外部时关闭
+        window.addEventListener("click", function(e) {
+            if (!e.target.matches("img[alt='Avatar']")) {
+                var dd = document.getElementById("userDropdown");
+                if (dd) dd.style.display = "none";
+            }
+        });
+    </script>
+
+    <script>
+        function checkOrderBeforeChange() {
+            // 使用AJAX检查当前是否有未付款订单
+            fetch('/Orders/CheckUnpaidOrder', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.hasUnpaidOrder) {
+                    alert('You have an order now. Please pay or cancel the order before changing dining option.');
+                } else {
+                    // 如果没有未付款订单，执行原来的清除操作
+                    fetch("/Home/ClearDiningOption", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert("Failed to clear dining option");
+                        }
+                    })
+                    .catch(err => console.error(err));
+                }
+            })
+            .catch(error => {
+                console.error('Error checking order status:', error);
+            });
+        }
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var btnChange = document.getElementById("btnChangeDining");
+            if (btnChange) {
+                btnChange.addEventListener("click", function () {
+                    fetch("/Home/ClearDiningOption", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                location.reload(); // ✅ 刷新后重新弹出选择
+                            } else {
+                                alert("Failed to clear dining option");
+                            }
+                        })
+                        .catch(err => console.error(err));
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
+

@@ -1,0 +1,116 @@
+﻿@model Demo.Models.Member
+
+@{
+    ViewData["Title"] = "";
+}
+
+<div class="container">
+<h2>Members Details</h2>
+
+<div class="details">
+    <h4>Member</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">Photo</dt>
+        <dd class="col-sm-10">
+            @if (!string.IsNullOrEmpty(Model.PhotoPath))
+            {
+                <img src="@Model.PhotoPath" alt="Photo" width="120" />
+            }
+        </dd>
+        <dt class="col-sm-2">
+            User @Html.DisplayNameFor(model => model.Id)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Id)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.Username)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Username)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.Email)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Email)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.Point)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Point)
+        </dd>
+    </dl>
+</div>
+    <div class="form-group form-actions" style="margin-top:16px;">
+        <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary">Edit</a>
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>
+
+</div>
+
+<style>
+
+    .container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+        .container h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+        }
+
+    .details{
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+    }
+
+
+
+
+    .btn {
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background-color: #e74c3c;
+        color: #fff;
+    }
+
+        .btn-primary:hover {
+            background-color: #c0392b;
+        }
+
+    .btn-secondary {
+        background-color: #95a5a6;
+        color: #fff;
+    }
+
+        .btn-secondary:hover {
+            background-color: grey;
+            color: #fff;
+        }
+    .btn-danger {
+        background-color: #e74c3c;
+        color: white;
+    }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+</style>

@@ -1,0 +1,267 @@
+﻿@model Demo.Models.Member
+
+@{
+    ViewData["Title"] = "";
+}
+
+<div class="profile-edit-container">
+    <h2>Edit Profile</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <form asp-action="Profile" enctype="multipart/form-data" method="post">
+        <input type="hidden" asp-for="Id" />
+
+        <div asp-validation-summary="All" class="alert alert-danger" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+        <div class="form-group">
+            <label>Username</label>
+            <input asp-for="Username" class="form-control" />
+            <span asp-validation-for="Username" class="text-danger"></span> 
+        </div>
+
+        <div class="form-group">
+            <label>Email (Can't Be Change)</label>
+            <input asp-for="Email" type="email" class="form-control" readonly />
+        </div>
+
+        <div class="form-group">
+            <label>Change Password (leave all blank to keep current password)</label>
+
+            <div style="margin-top:8px;">
+                <label>Current Password</label>
+                <input name="currentPassword" type="password" class="form-control" />
+            </div>
+
+            <div style="margin-top:10px;">
+                <label>New Password</label>
+                <input name="newPassword" type="password" class="form-control" minlength="8" />
+                <small class="form-text">New password must be at least 8 characters.</small>
+            </div>
+
+            <div style="margin-top:10px;">
+                <label>Confirm New Password</label>
+                <input name="confirmPassword" type="password" class="form-control" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Photo</label>
+
+            <!-- 隐藏的 input，仍然是 name="Photo"，兼容后端 -->
+            <input type="file" id="photoInput" name="Photo" class="form-control d-none" accept="image/*" />
+
+            <!-- 拖拽区域 -->
+            <div id="dropArea" class="drop-area">
+                <p>Drag & Drop photo here or click to choose</p>
+                <img id="previewImg" class="preview-img"
+                     src="@(string.IsNullOrEmpty(Model.PhotoPath) ? "" : Model.PhotoPath)"
+                     style="@(string.IsNullOrEmpty(Model.PhotoPath) ? "display:none;" : "display:block;")" />
+            </div>
+        </div>
+
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-action="UserPage" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <script>
+        const dropArea = document.getElementById("dropArea");
+        const photoInput = document.getElementById("photoInput");
+        const previewImg = document.getElementById("previewImg");
+
+        // 点击 drop 区 -> 触发 input
+        dropArea.addEventListener("click", () => photoInput.click());
+
+        // input 选择文件时
+        photoInput.addEventListener("change", function () {
+            if (this.files && this.files[0]) {
+                previewImage(this.files[0]);
+            }
+        });
+
+        // 拖拽进入 / 离开高亮
+        dropArea.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropArea.classList.add("dragover");
+        });
+        dropArea.addEventListener("dragleave", () => {
+            dropArea.classList.remove("dragover");
+        });
+
+        // 放下文件
+        dropArea.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropArea.classList.remove("dragover");
+
+            if (e.dataTransfer.files.length > 0) {
+                photoInput.files = e.dataTransfer.files; // 赋值给 input
+                previewImage(e.dataTransfer.files[0]);
+            }
+        });
+
+        // 预览函数
+        function previewImage(file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = "block";
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+
+
+
+</div>
+
+<style>
+    .profile-edit-container {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 25px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+        .profile-edit-container h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #333;
+        }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: bold;
+        color: #555;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 15px;
+        transition: border-color 0.3s;
+    }
+
+        .form-control:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+    .preview-img {
+        margin-top: 10px;
+    }
+
+        .preview-img img {
+            max-width: 120px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+    }
+
+    .btn {
+        padding: 10px 16px;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.3s;
+    }
+
+    .btn-primary {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+    }
+
+        .btn-primary:hover {
+            background-color: #c0392b;
+        }
+
+    .btn-secondary {
+        background-color: #95a5a6;
+        color: white;
+        border: none;
+    }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+    .alert {
+        padding: 12px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .form-text {
+        color: #6c757d;
+        font-size: 0.9em;
+    }
+
+    .alert-danger {
+        color: #721c24;
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 10px;
+        border-radius: 4px;
+    }
+
+    .drop-area {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        background-color: #fafafa;
+        transition: border-color 0.3s, background-color 0.3s;
+    }
+
+        .drop-area.dragover {
+            border-color: #007bff;
+            background-color: #e9f5ff;
+        }
+
+        .drop-area p {
+            margin: 0;
+            color: #666;
+        }
+
+    .preview-img {
+        margin-top: 10px;
+        max-width: 120px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        display: none;
+    }
+
+
+</style>

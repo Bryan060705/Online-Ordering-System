@@ -1,0 +1,137 @@
+﻿@model IEnumerable<Demo.Models.Voucher>
+
+@{
+    ViewData["Title"] = "";
+    var member = ViewBag.Member as Demo.Models.Member;
+}
+
+<div class="redeem-container">
+    <h2>🎁 Redeem Vouchers</h2>
+
+    @if (member != null)
+    {
+        <div class="points-info">
+            <strong>💎 Your Points: </strong> @member.Point
+        </div>
+    }
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-info">@TempData["Message"]</div>
+    }
+
+    <div class="table-responsive">
+        <table class="redeem-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Detail</th>
+                    <th>Product</th>
+                    <th>Discounted Price</th>
+                    <th>Points Needed</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Name</td>
+                        <td>@item.Detail</td>
+                        <td>@item.Product.Name</td>
+                        <td>RM @item.DiscountedPrice</td>
+                        <td>@item.PointNeeded</td>
+                        <td>
+                            @if (member != null && member.Point >= item.PointNeeded)
+                            {
+                                <form asp-action="Redeem" method="post">
+                                    <input type="hidden" name="voucherId" value="@item.Id" />
+                                    <button type="submit" class="btn btn-primary">Redeem</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button class="btn btn-secondary" disabled>Not Enough Points</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<style>
+    .redeem-container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 25px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+        .redeem-container h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+        }
+
+    .redeem-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+    }
+
+        .redeem-table thead {
+            background-color: #f8f9fa;
+        }
+
+        .redeem-table th,
+        .redeem-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e9ecef;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .redeem-table tr:hover {
+            background-color: #f1f7ff;
+            transition: 0.3s;
+        }
+
+    /* alert 美化 */
+    .alert {
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    .alert-info {
+        background-color: #eaf4ff;
+        border: 1px solid #b6daff;
+        color: #2c7be5;
+    }
+
+    /* 按钮样式 */
+    .btn {
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: bold;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .btn-primary {
+        background-color: #e67e22;
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background-color: #d35400;
+        }
+</style>
